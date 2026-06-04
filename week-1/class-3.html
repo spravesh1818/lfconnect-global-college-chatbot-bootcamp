@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class 3 — Lab &amp; Student Project</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/reveal-theme.css">
+</head>
+<body class="deck-page" data-page="class-3">
+  <div class="reveal">
+    <div class="slides">
+
+      <section data-align="center">
+        <h1>Lab &amp; Student Project</h1>
+        <p class="subtitle">Week 1 · Class 3 · Personalized Chatbot</p>
+      </section>
+
+      <section>
+        <h2>Lab Deliverable</h2>
+        <div class="callout">
+          <p><strong>Personalized Chatbot using Groq API</strong></p>
+        </div>
+        <ul>
+          <li>Extends Hello Chatbot from Class 2</li>
+          <li>Uses a <strong>system prompt</strong> to define personality</li>
+          <li>Demo-ready for a short in-class or async presentation</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>What is a System Prompt?</h2>
+        <p>The <strong>system</strong> message sets behavior before the user speaks — tone, role, constraints, and format.</p>
+        <ul>
+          <li>Not shown to end users (in most UIs)</li>
+          <li>Steers every reply consistently</li>
+          <li>Week 2 goes deeper on prompt engineering</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Personality Examples</h2>
+        <div class="tool-grid">
+          <div class="tool-card">
+            <strong>Teacher Bot</strong>
+            <span>Patient, step-by-step, checks understanding</span>
+          </div>
+          <div class="tool-card">
+            <strong>Joke Bot</strong>
+            <span>Witty, pun-heavy, keeps answers short</span>
+          </div>
+          <div class="tool-card">
+            <strong>Travel Guide</strong>
+            <span>Enthusiastic, practical tips, local culture</span>
+          </div>
+          <div class="tool-card">
+            <strong>Your Choice</strong>
+            <span>HR assistant, history expert, campus bot…</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>System Prompt Samples</h2>
+        <pre><code class="language-python">TEACHER = """You are a friendly programming tutor.
+Explain concepts in simple steps. Ask a follow-up
+question after each answer to check understanding."""
+
+JOKE_BOT = """You are a comedian chatbot. Add light humor
+and puns when appropriate. Keep responses under 3 sentences
+unless asked for more."""
+
+TRAVEL = """You are an expert travel guide. Give practical
+tips on destinations, food, and culture. Be enthusiastic
+but factual. Say when you are unsure."""</code></pre>
+      </section>
+
+      <section>
+        <h2>Personalized Chatbot — Code</h2>
+        <pre><code class="language-python">from groq import Groq
+import os
+
+client = Groq(api_key=os.environ["GROQ_API_KEY"])
+MODEL = "llama-3.3-70b-versatile"
+
+SYSTEM_PROMPT = """You are a friendly programming tutor.
+Explain concepts in simple steps."""
+
+def chat(user_message: str) -> str:
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        temperature=0.7,
+    )
+    return response.choices[0].message.content</code></pre>
+      </section>
+
+      <section>
+        <h2>Multi-Turn Conversations (Stretch)</h2>
+        <p>Pass prior <code>assistant</code> messages so the bot remembers context:</p>
+        <pre><code class="language-python">history = [
+    {"role": "system", "content": SYSTEM_PROMPT},
+]
+
+def chat_turn(user_message: str) -> str:
+    history.append({"role": "user", "content": user_message})
+    response = client.chat.completions.create(
+        model=MODEL, messages=history
+    )
+    reply = response.choices[0].message.content
+    history.append({"role": "assistant", "content": reply})
+    return reply</code></pre>
+      </section>
+
+      <section>
+        <h2>Debugging Checklist</h2>
+        <ul class="checklist">
+          <li>Is <code>GROQ_API_KEY</code> set? (<code>echo $GROQ_API_KEY</code>)</li>
+          <li>Correct model name from Groq docs?</li>
+          <li>Internet / VPN / firewall blocking API?</li>
+          <li>429 rate limit — slow down or wait</li>
+          <li>Empty user input handled in your loop?</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Common Issues (Q&amp;A)</h2>
+        <table>
+          <thead>
+            <tr><th>Symptom</th><th>Solution</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>KeyError: GROQ_API_KEY</code></td><td>Export env var or use <code>python-dotenv</code></td></tr>
+            <tr><td>Bot ignores personality</td><td>Put instructions in <code>system</code>, not <code>user</code></td></tr>
+            <tr><td>Replies too long</td><td>Add "Keep answers under N sentences" to system prompt</td></tr>
+            <tr><td>Off-topic answers</td><td>Tighten system prompt; lower temperature</td></tr>
+            <tr><td>Colab secrets</td><td>Use Colab "Secrets" for API key storage</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Stretch Goals</h2>
+        <ul>
+          <li><strong>Conversation history</strong> — multi-turn memory</li>
+          <li><strong>Streaming</strong> — print tokens as they arrive</li>
+          <li><strong>CLI flags</strong> — switch personality via argument</li>
+          <li><strong>Enhance your Class 2 Gradio app</strong> with a personality (optional)</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Presentation Rubric</h2>
+        <p>When you demo (2–3 min), show:</p>
+        <ol>
+          <li>Your chosen <strong>personality</strong> and why</li>
+          <li><strong>3 example questions</strong> and bot replies</li>
+          <li>One thing you <strong>debugged</strong> or learned</li>
+          <li>(Optional) Code snippet of your system prompt</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Preview: Week 2</h2>
+        <ul>
+          <li><strong>Prompt engineering</strong> — few-shot, format control</li>
+          <li><strong>Web scraping</strong> — Wikipedia, blogs, news</li>
+          <li><strong>PDF parsing + chunking</strong> — build a knowledge dataset</li>
+        </ul>
+        <div class="callout callout--info">
+          <p>Lab deliverable: clean text dataset ready for embeddings (Week 3).</p>
+        </div>
+      </section>
+
+      <section data-align="center">
+        <h2>Week 1 Complete</h2>
+        <ul class="checklist" style="display: inline-block; text-align: left;">
+          <li>You understand chatbot pipelines</li>
+          <li>You can call Groq from Python</li>
+          <li>You built a personalized chatbot</li>
+        </ul>
+        <p class="subtitle" style="margin-top: 1.5rem;">Questions? Open office hours · See you in Week 2</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

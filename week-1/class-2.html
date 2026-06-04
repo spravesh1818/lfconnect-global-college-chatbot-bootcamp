@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class 2 — Calling an LLM API (Groq)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/reveal-theme.css">
+</head>
+<body class="deck-page" data-page="class-2">
+  <div class="reveal">
+    <div class="slides">
+
+      <section data-align="center">
+        <h1>Calling an LLM API</h1>
+        <p class="subtitle">Week 1 · Class 2 · Groq + Python</p>
+      </section>
+
+      <section>
+        <h2>Learning Objectives</h2>
+        <ul>
+          <li>Refresh <strong>Python basics</strong> (print, variables, if, loops, functions)</li>
+          <li>Explain what Groq provides and why we use it</li>
+          <li>Make a chat completion API call in Python</li>
+          <li>Understand <strong>message roles</strong> (system, user, assistant)</li>
+          <li>Discuss rate limits, latency, and common errors</li>
+          <li>Build a simple "Hello Chatbot" REPL</li>
+          <li>Complete the <strong>Gradio</strong> assignment (you write the code)</li>
+        </ul>
+      </section>
+
+      <section data-align="center">
+        <h2>Open the notebook in Google Colab</h2>
+        <p class="subtitle">Run cells as we go — code on slides matches the notebook.</p>
+        <p style="margin-top: 1.25rem;">
+          <a
+            class="colab-open-btn"
+            href="https://colab.research.google.com/github/YOUR_GITHUB_USER/global-chatbot-bootcamp/blob/main/week-1/notebooks/hello_chatbot_groq.ipynb"
+            target="_blank"
+            rel="noopener"
+          >Open in Colab</a>
+        </p>
+        <p class="footnote" style="margin-top: 1rem;">
+          Replace <code>YOUR_GITHUB_USER</code> in the URL after you publish the repo.<br>
+          Or open <code>week-1/notebooks/hello_chatbot_groq.ipynb</code> from the course repo.
+        </p>
+        <aside class="notes">Give students 2 minutes to open Colab. Start with Section 1 (Python refresher).</aside>
+      </section>
+
+      <section>
+        <h2>Why Python First?</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 1–5 — refresher before Groq (Section 6+).</p>
+        </div>
+        <p>New to Python? We cover the basics you need to read and write our chatbot code.</p>
+        <ul>
+          <li>Print → variables → if → loops → functions</li>
+          <li>Then: Groq API, roles, REPL, Gradio assignment</li>
+        </ul>
+        <aside class="notes">Connect to Class 1 hand-raise. Pace Sections 1–5 for beginners.</aside>
+      </section>
+
+      <section>
+        <h2>Python: Print</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 1</p>
+        </div>
+        <pre><code class="language-python">print("Hello, chatbot bootcamp!")
+topic = "chatbots"
+print(f"Today we learn about {topic}.")</code></pre>
+      </section>
+
+      <section>
+        <h2>Python: Variables</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 2</p>
+        </div>
+        <pre><code class="language-python">name = "Alex"
+lesson = 2
+print(f"Student: {name}, Class: {lesson}")</code></pre>
+      </section>
+
+      <section>
+        <h2>Python: If Statements</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 3 — same idea as <code>quit</code> in the chat loop later.</p>
+        </div>
+        <pre><code class="language-python">if not user_input:
+    print("Please type something.")
+elif user_input.lower() == "quit":
+    print("Goodbye!")
+else:
+    print("You said:", user_input)</code></pre>
+      </section>
+
+      <section>
+        <h2>Python: Loops</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 4</p>
+        </div>
+        <pre><code class="language-python">for word in ["Hello", "Chatbot", "Bootcamp"]:
+    print(word)
+
+count = 0
+while count < 3:
+    print("Count:", count)
+    count += 1</code></pre>
+      </section>
+
+      <section>
+        <h2>Python: Functions</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 5 — next you will write <code>chat()</code> and <code>ask()</code>.</p>
+        </div>
+        <pre><code class="language-python">def greet(name: str) -> str:
+    return f"Hello, {name}!"
+
+print(greet("bootcamper"))</code></pre>
+      </section>
+
+      <section data-align="center">
+        <h2>From Python → Groq API</h2>
+        <p class="subtitle">Notebook Section 6+ — install Groq, set API key, call the LLM</p>
+      </section>
+
+      <section>
+        <h2>What is Groq?</h2>
+        <ul>
+          <li><strong>Groq</strong> — cloud platform for <strong>fast LLM inference</strong></li>
+          <li>Hosts open models: <strong>LLaMA</strong>, <strong>Mixtral</strong>, and others</li>
+          <li>Developer-friendly <strong>REST API</strong> + official Python SDK</li>
+          <li>Free tier for learning — check <a href="https://console.groq.com" target="_blank">console.groq.com</a></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Before You Code</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 6–7 — install <code>groq</code> and set your API key.</p>
+        </div>
+        <ol>
+          <li>Create a Groq account → generate an <strong>API key</strong></li>
+          <li><strong>Colab:</strong> run <code>pip install groq</code> and use <code>getpass</code> (Section 7)</li>
+          <li><strong>Local:</strong> <code>export GROQ_API_KEY="gsk_your_key_here"</code></li>
+        </ol>
+        <pre><code class="language-bash"># Local terminal only
+export GROQ_API_KEY="gsk_your_key_here"</code></pre>
+      </section>
+
+      <section>
+        <h2>Minimal API Call</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 8 — run the next code cell.</p>
+        </div>
+        <pre><code class="language-python">from groq import Groq
+
+client = Groq(api_key=os.environ["GROQ_API_KEY"])
+MODEL = "llama-3.3-70b-versatile"
+
+response = client.chat.completions.create(
+    model=MODEL,
+    messages=[{"role": "user", "content": "What is a chatbot?"}],
+)
+print(response.choices[0].message.content)</code></pre>
+        <p class="footnote">Verify the latest model name on Groq docs — model IDs change over time.</p>
+      </section>
+
+      <section>
+        <h2>Request Anatomy</h2>
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>model</code></td><td>Which LLM to run (size, speed, quality)</td></tr>
+            <tr><td><code>messages</code></td><td>Conversation history (roles + content)</td></tr>
+            <tr><td><code>temperature</code></td><td>Creativity (0 = focused, 1+ = varied)</td></tr>
+            <tr><td><code>max_tokens</code></td><td>Limit on response length</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Message Roles at a Glance</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 9 — overview; Sections 9a–9c — hands-on.</p>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Role</th><th>Who writes it</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>system</strong></td><td>You (developer)</td><td>Instructions: tone, format, rules</td></tr>
+            <tr><td><strong>user</strong></td><td>Human</td><td>Questions and input</td></tr>
+            <tr><td><strong>assistant</strong></td><td>Model (past turns)</td><td>Memory for multi-turn chat</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Example: System Changes the Answer</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 9a — same user question, two system prompts.</p>
+        </div>
+        <p>Same <code>user</code> message — only the <code>system</code> instruction changes (tutor vs comedian).</p>
+        <pre><code class="language-python">QUESTION = "Explain what a chatbot is in two sentences."
+
+chat([
+    {"role": "system", "content": "You are a patient programming tutor."},
+    {"role": "user", "content": QUESTION},
+])
+
+chat([
+    {"role": "system", "content": "You are a witty comedian. Keep it short."},
+    {"role": "user", "content": QUESTION},
+])</code></pre>
+        <div class="callout callout--warning">
+          <p>The model did not get smarter — the <strong>instruction</strong> changed.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Example: Assistant = Memory</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 9b — append prior turns before the next question.</p>
+        </div>
+        <pre><code class="language-python">messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "My favorite color is blue."},
+]
+first_reply = chat(messages)
+messages.append({"role": "assistant", "content": first_reply})
+messages.append({"role": "user", "content": "What is my favorite color?"})
+print(chat(messages))</code></pre>
+        <p class="footnote">Without the <code>assistant</code> turn, the model would not remember what you said earlier.</p>
+      </section>
+
+      <section>
+        <h2>The <code>chat(messages)</code> Pattern</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 9c — one helper for all role patterns; Sections 12–15 use <code>ask()</code> wrappers.</p>
+        </div>
+        <pre><code class="language-python">def chat(messages: list) -> str:
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        temperature=0.7,
+    )
+    return response.choices[0].message.content
+
+def ask(question: str) -> str:
+    return chat([{"role": "user", "content": question}])</code></pre>
+      </section>
+
+      <section>
+        <h2>Response Anatomy</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 10 — print reply and token usage.</p>
+        </div>
+        <pre><code class="language-python">text = response.choices[0].message.content
+usage = response.usage
+print("Reply:", text)
+print("Prompt tokens:", usage.prompt_tokens)</code></pre>
+      </section>
+
+      <section>
+        <h2>Rate Limits &amp; Latency</h2>
+        <div class="columns">
+          <div>
+            <h3>Rate limits</h3>
+            <ul>
+              <li>Requests per minute (RPM)</li>
+              <li>Tokens per minute (TPM)</li>
+              <li>HTTP <code>429</code> when exceeded</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Latency</h3>
+            <ul>
+              <li>Time to first token</li>
+              <li>Total generation time</li>
+              <li>Larger models = slower, often smarter</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout callout--warning">
+          <p><strong>Notebook:</strong> optional Section 11 — timing one call. Add <code>time.sleep()</code> if you hit 429 errors.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Mini Project: Hello Chatbot</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 14 — interactive chat loop.</p>
+        </div>
+        <p>Goal: read user input and print the LLM reply until the user types <code>quit</code>.</p>
+        <pre><code class="language-python">while True:
+    question = input("You: ")
+    if question.lower() in ("quit", "exit"):
+        break
+    print("Bot:", ask(question))</code></pre>
+      </section>
+
+      <section>
+        <h2>Hello Chatbot — <code>ask()</code></h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 12–14 — define <code>ask()</code>, test once, then run the loop.</p>
+        </div>
+        <pre><code class="language-python">def ask(question: str) -> str:
+    return chat([{"role": "user", "content": question}])</code></pre>
+        <p class="footnote">Full REPL loop is in the notebook — uses <code>client</code>, <code>MODEL</code>, and <code>chat()</code>.</p>
+      </section>
+
+      <section>
+        <h2>Error Handling</h2>
+        <table>
+          <thead>
+            <tr><th>Error</th><th>Likely cause</th><th>Fix</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>401 Unauthorized</td><td>Missing or invalid API key</td><td>Re-run notebook Section 7</td></tr>
+            <tr><td>404 Model not found</td><td>Wrong model ID</td><td>Update <code>MODEL</code></td></tr>
+            <tr><td>429 Too Many Requests</td><td>Rate limit</td><td>Wait, retry, reduce calls</td></tr>
+            <tr><td>Timeout</td><td>Network / long prompt</td><td>Retry, shorten input</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Robust API Call Pattern</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 15 — <code>ask_safe()</code>.</p>
+        </div>
+        <pre><code class="language-python">def ask_safe(question: str) -> str:
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": question}],
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Sorry, something went wrong: {e}"</code></pre>
+      </section>
+
+      <section>
+        <h2>Gradio: What It Does</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 16 — assignment (you implement; no solution in repo).</p>
+        </div>
+        <ul>
+          <li><strong>Gradio</strong> — web chat UI in minutes (<a href="https://www.gradio.app" target="_blank" rel="noopener">gradio.app</a>)</li>
+          <li><code>gr.ChatInterface(fn=respond)</code> — your function returns the bot reply</li>
+          <li><code>respond</code> must build the <code>messages</code> list: <strong>system</strong> + past turns + new <strong>user</strong> message</li>
+          <li>Call your notebook <code>chat(messages)</code> inside <code>respond</code></li>
+        </ul>
+        <p class="footnote">Colab: <code>.launch(debug=True)</code> or <code>share=True</code> if the iframe blocks the UI.</p>
+      </section>
+
+      <section>
+        <h2>Gradio Assignment</h2>
+        <div class="callout callout--warning">
+          <p><strong>You write the code</strong> — requirements are in notebook Section 16.</p>
+        </div>
+        <ul class="checklist">
+          <li><code>pip install gradio</code> in your own cell</li>
+          <li><code>SYSTEM_PROMPT</code> + <code>respond(user_message, history)</code></li>
+          <li>Wire <code>ChatInterface</code> to <code>chat(messages)</code></li>
+          <li>Demo: screenshot or <code>share=True</code> URL + 3 example chats</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Homework</h2>
+        <ul class="checklist">
+          <li>Complete notebook through <strong>Section 15</strong> (Python refresher + REPL + <code>ask_safe</code>)</li>
+          <li><strong>Assignment:</strong> Section 16 — build your own Gradio app with a <strong>system prompt</strong></li>
+          <li>Demo: screenshot or live URL (<code>share=True</code> link) + 3 example chats</li>
+          <li>Optional: try two different system prompts and compare replies</li>
+          <li>Bring one bug or error to Class 3 Q&amp;A</li>
+        </ul>
+      </section>
+
+      <section data-align="center">
+        <h2>Recap</h2>
+        <ul class="checklist" style="display: inline-block; text-align: left;">
+          <li>Python basics → Groq API → <code>chat(messages)</code></li>
+          <li><code>messages</code> roles: system, user, assistant</li>
+          <li>Hello Chatbot REPL in class; Gradio = your homework build</li>
+        </ul>
+        <p class="subtitle" style="margin-top: 1.5rem;">Next: Class 3 — Personalities, debugging, lab deliverable</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

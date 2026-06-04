@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class 1 — What is a Chatbot &amp; How it Works</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/reveal-theme.css">
+</head>
+<body class="deck-page" data-page="class-1">
+  <div class="reveal">
+    <div class="slides">
+
+      <section data-align="center">
+        <h1>What is a Chatbot &amp; How it Works</h1>
+        <p class="subtitle">Week 1 · Class 1 · Chatbot Foundations</p>
+      </section>
+
+      <section>
+        <h2>About your facilitator</h2>
+        <div class="facilitator">
+          <img
+            class="facilitator__photo"
+            src="../assets/images/my_image.jpg"
+            alt="Pravesh Chapagain"
+          >
+          <div class="facilitator__content">
+            <h2>Pravesh Chapagain</h2>
+            <p class="facilitator__role">Software Engineer · AI/Prompt practitioner · Workshop facilitator</p>
+            <p class="facilitator__bio">I work where engineering, AI workflows, and teaching meet. Today I will give you the same map I use to build chatbots and keep up with generative AI without getting overwhelmed.</p>
+            <div class="tag-row">
+              <span>Engineering</span>
+              <span>AI workflows</span>
+              <span>Teaching</span>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Keep this under 60 seconds. Share one short story about how AI or chatbots changed your workflow.</aside>
+      </section>
+
+      <section data-align="center">
+        <h2>If you want to follow along</h2>
+        <p class="subtitle">Scan this QR code to open the lesson materials.</p>
+        <figure class="slide-figure qr-slide">
+          <img
+            src="../assets/images/qr-codes/class-1.png"
+            alt="QR code for Class 1 lesson materials"
+          >
+        </figure>
+        <aside class="notes">Pause while students scan. Confirm everyone can open the materials on their phone.</aside>
+      </section>
+
+      <section data-align="center">
+        <h2>Quick survey</h2>
+        <div class="activity-box">
+          <p>Raise your hand if you have used <strong>Python</strong> before</p>
+          <p class="subtitle">Any amount counts — school, work, tutorials, or personal projects</p>
+        </div>
+        <p style="margin-top: 1.25rem; text-align: center; font-size: 0.85em;">No Python yet? That is fine — <strong>Class 2</strong> starts with a short Python refresher, then Groq.</p>
+        <aside class="notes">Count hands. Adjust Class 2 pacing if most of the room is new to Python.</aside>
+      </section>
+
+      <section>
+        <h2>Learning Objectives</h2>
+        <ul>
+          <li>Describe how chatbots evolved from rule-based to LLM-powered systems</li>
+          <li>Explain the high-level chatbot pipeline</li>
+          <li>Name key tools used in this course</li>
+          <li>Identify real-world domains where chatbots add value</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>What is a Chatbot?</h2>
+        <p>A <strong>chatbot</strong> is software that converses with users through natural language — text or voice — to answer questions, complete tasks, or guide decisions.</p>
+        <div class="callout">
+          <p>Modern chatbots don't just match keywords; many use <strong>large language models (LLMs)</strong> to understand intent and generate human-like replies.</p>
+        </div>
+      </section>
+
+      <section class="slide-timeline">
+        <h2>History of Chatbots</h2>
+        <p class="subtitle" style="margin-top: 0;">Origins · 1964–1999</p>
+        <div class="timeline">
+          <div class="timeline__item">
+            <span class="timeline__era">1966</span>
+            <div>
+              <strong>ELIZA</strong> (MIT, Joseph Weizenbaum)
+              <p>Pattern matching + keyword rules. The DOCTOR script simulated a Rogerian therapist. Created the <em>illusion</em> of understanding — not real comprehension.</p>
+            </div>
+          </div>
+          <div class="timeline__item">
+            <span class="timeline__era">1972</span>
+            <div>
+              <strong>PARRY</strong>
+              <p>Simulated a paranoid patient. Used in early Turing Test experiments alongside ELIZA.</p>
+            </div>
+          </div>
+          <div class="timeline__item">
+            <span class="timeline__era">1995</span>
+            <div>
+              <strong>ALICE</strong> (Richard Wallace)
+              <p>AIML (Artificial Intelligence Markup Language); 50,000+ pattern categories. Open-source and hobbyist-friendly.</p>
+            </div>
+          </div>
+        </div>
+        <p class="footnote">Key idea: conversation via <strong>scripts and rules</strong>, not learning from data.</p>
+      </section>
+
+      <section class="slide-timeline">
+        <h2>History of Chatbots</h2>
+        <p class="subtitle" style="margin-top: 0;">Web &amp; mobile era · 2001–2019</p>
+        <div class="timeline">
+          <div class="timeline__item">
+            <span class="timeline__era">2001</span>
+            <div>
+              <strong>SmarterChild</strong> (AIM, MSN, Yahoo)
+              <p>First mass-market chatbot — 30M+ users. Human-curated responses: accurate but inflexible; no hallucinations.</p>
+            </div>
+          </div>
+          <div class="timeline__item">
+            <span class="timeline__era">2011</span>
+            <div>
+              <strong>IBM Watson</strong> · <strong>Siri</strong>
+              <p>Watson won Jeopardy! (2011). Siri brought voice assistants to smartphones; Alexa (2014) and Google Assistant (2016) followed.</p>
+            </div>
+          </div>
+          <div class="timeline__item">
+            <span class="timeline__era">2016</span>
+            <div>
+              <strong>Messenger bots</strong>
+              <p>Businesses automated FAQs, orders, and support on platforms billions already used daily.</p>
+            </div>
+          </div>
+        </div>
+        <p class="footnote">Key idea: <strong>useful assistants</strong>, but narrow intents and shallow dialogue.</p>
+      </section>
+
+      <section>
+        <h2>History of Chatbots</h2>
+        <p class="subtitle" style="margin-top: 0;">LLM era · 2020–today</p>
+        <ul>
+          <li>Modern chatbots are powered by <strong>large language models (LLMs)</strong>, not hand-written scripts</li>
+          <li><strong>ChatGPT</strong> (2022) made conversational AI mainstream</li>
+          <li>This course: LLM + <strong>RAG</strong> so answers stay grounded in your data</li>
+        </ul>
+        <div class="callout callout--info">
+          <p>Next: what LLMs are, why they were built, and how they changed chatbots.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>What is a Large Language Model?</h2>
+        <p>A <strong>large language model (LLM)</strong> is a deep neural network trained on massive amounts of text to predict the <strong>next token</strong> (a word piece).</p>
+        <ul>
+          <li><strong>Tokens</strong> — text is split into sub-word units; the model picks the most likely next token, again and again</li>
+          <li><strong>"Large"</strong> — billions of parameters + huge training corpora (books, web, code)</li>
+          <li>At scale, the model learns grammar, facts, reasoning patterns, and conversational style</li>
+        </ul>
+        <div class="callout">
+          <p>Think of it as <strong>autocomplete at extraordinary scale</strong> — not a database of canned replies.</p>
+        </div>
+      </section>
+
+      <section class="compact-list">
+        <h2>Why Were LLMs Created?</h2>
+        <div class="columns">
+          <div>
+            <h3>Old limits</h3>
+            <ul>
+              <li><strong>Rule-based</strong> — breaks on unexpected phrasing</li>
+              <li><strong>Intent + slots</strong> — only predefined tasks (Siri era)</li>
+              <li><strong>Small neural LMs</strong> — weak open-ended chat</li>
+            </ul>
+          </div>
+          <div>
+            <h3>What researchers wanted</h3>
+            <ul>
+              <li><strong>One model, many tasks</strong> — not thousands of scripts</li>
+              <li><strong>Longer context</strong> — remember earlier turns</li>
+              <li><strong>Pre-train once</strong> — adapt via prompts or fine-tuning</li>
+              <li><strong>Faster training</strong> — parallel GPUs (Transformers)</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="compact-list">
+        <h2>History of LLMs</h2>
+        <p class="subtitle" style="margin-top: 0;">Before the Transformer · 1990s–2016</p>
+        <ul>
+          <li><strong>1990s–2000s</strong> — Statistical models (n-grams): predict next word from word counts</li>
+          <li><strong>2010s</strong> — Word embeddings (Word2Vec), RNNs/LSTMs: neural but slow to train</li>
+          <li><strong>2013–2016</strong> — Seq2seq + attention: models learn to "look back" at earlier words</li>
+        </ul>
+        <p class="footnote">Language modeling existed for decades — the 2017 Transformer changed how we scale it.</p>
+      </section>
+
+      <section class="compact-list">
+        <h2>2017 — The Transformer</h2>
+        <p class="subtitle" style="margin-top: 0;">"Attention Is All You Need" · Vaswani et al., Google</p>
+        <figure class="slide-figure">
+          <img
+            src="../assets/images/transformer-architecture.png"
+            alt="Diagram of the full Transformer encoder-decoder architecture"
+          >
+          <figcaption>Transformer architecture · CC BY 4.0 · dvgodoy · via Wikimedia Commons</figcaption>
+        </figure>
+        <ul>
+          <li><strong>Self-attention</strong> — every word can relate to every other word in parallel</li>
+          <li><strong>GPT</strong> uses decoder stacks; <strong>BERT</strong> uses encoder-only stacks</li>
+        </ul>
+      </section>
+
+      <section class="compact-list">
+        <h2>History of LLMs</h2>
+        <p class="subtitle" style="margin-top: 0;">GPT era · 2018–today</p>
+        <div class="timeline">
+          <div class="timeline__item">
+            <span class="timeline__era">2018</span>
+            <div><strong>GPT-1</strong> — pre-train on text, then fine-tune for tasks</div>
+          </div>
+          <div class="timeline__item">
+            <span class="timeline__era">2019</span>
+            <div><strong>GPT-2</strong> — coherent long-form text; responsible-release debate</div>
+          </div>
+          <div class="timeline__item">
+            <span class="timeline__era">2020</span>
+            <div><strong>GPT-3</strong> — 175B parameters; few-shot prompting demos</div>
+          </div>
+          <div class="timeline__item">
+            <span class="timeline__era">2022</span>
+            <div><strong>ChatGPT</strong> — RLHF + chat UI; ~100M users in two months</div>
+          </div>
+          <div class="timeline__item">
+            <span class="timeline__era">Today</span>
+            <div><strong>GPT-4</strong>, Claude, Gemini, LLaMA, Mixtral — <strong>Groq</strong> hosts open models (this course)</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>How LLMs Power Chatbots</h2>
+        <div class="pipeline">
+          <span class="pipeline__step">User message</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">Tokenize</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">LLM generates</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">Reply</span>
+        </div>
+        <ul>
+          <li><strong>Strengths</strong> — open-ended Q&amp;A, summarization, tone via <strong>system prompts</strong></li>
+          <li><strong>Risks</strong> — hallucinations, outdated knowledge, cost/latency</li>
+          <li><strong>Mitigation</strong> — RAG, guardrails, human review (Weeks 2–4)</li>
+        </ul>
+        <div class="callout callout--info">
+          <p>Chatbot history gave us the <strong>interface</strong>; LLMs gave us the <strong>brain</strong>.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>What Chatbots Help Us With</h2>
+        <p><strong>For businesses and customers</strong></p>
+        <ul>
+          <li><strong>24/7 support</strong> — answers without waiting for business hours</li>
+          <li><strong>Scale</strong> — thousands of conversations at once</li>
+          <li><strong>Cost efficiency</strong> — automate FAQs; humans handle complex cases</li>
+          <li><strong>Faster answers</strong> — order status, passwords, product info instantly</li>
+          <li><strong>Consistency</strong> — same quality on every interaction</li>
+          <li><strong>Self-service</strong> — no phone trees or long hold times</li>
+          <li><strong>Routing &amp; triage</strong> — escalate the right issues to the right team</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>What Chatbots Help Us With</h2>
+        <p><strong>Across industries</strong></p>
+        <ul>
+          <li><strong>Education</strong> — tutoring, syllabus/FAQ bots, practice dialogues (e.g. simulated patients for medical students)</li>
+          <li><strong>Healthcare</strong> — scheduling, reminders, symptom triage, mental health check-ins, health literacy</li>
+          <li><strong>HR</strong> — onboarding, policy FAQs, leave and benefits questions</li>
+          <li><strong>Legal / compliance</strong> — document Q&amp;A and policy summaries (with disclaimers)</li>
+          <li><strong>E-commerce</strong> — returns, tracking, product recommendations</li>
+        </ul>
+        <div class="callout">
+          <p>Best systems combine <strong>AI + human review + grounded data (RAG)</strong> — especially in healthcare and legal contexts.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Rule-based vs LLM-powered</h2>
+        <div class="columns">
+          <div>
+            <h3>Rule-based</h3>
+            <ul>
+              <li>Predictable, fast, cheap</li>
+              <li>Breaks on unexpected input</li>
+              <li>Hard to maintain at scale</li>
+            </ul>
+          </div>
+          <div>
+            <h3>LLM-powered</h3>
+            <ul>
+              <li>Flexible, natural language</li>
+              <li>Can hallucinate wrong facts</li>
+              <li>Needs guardrails + retrieval (RAG)</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section data-align="center">
+        <h2>High-Level Pipeline</h2>
+        <div class="pipeline">
+          <span class="pipeline__step">User</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">Input</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">Processing</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">Response</span>
+        </div>
+        <p class="subtitle">Every chatbot — simple or advanced — follows this flow</p>
+      </section>
+
+      <section>
+        <h2>Inside "Processing"</h2>
+        <ul>
+          <li><strong>Understand</strong> — parse the user's message (intent, entities)</li>
+          <li><strong>Decide</strong> — rules, retrieval, or LLM generation</li>
+          <li><strong>Generate</strong> — craft a reply (template or model output)</li>
+          <li><strong>Return</strong> — send text back to the user interface</li>
+        </ul>
+        <p>Later weeks add <strong>retrieval</strong> (RAG) before the LLM step so answers stay grounded in your data.</p>
+      </section>
+
+      <section>
+        <h2>Tools We'll Use</h2>
+        <div class="tool-grid">
+          <div class="tool-card">
+            <strong>Groq</strong>
+            <span>Fast LLM inference (LLaMA, Mixtral)</span>
+          </div>
+          <div class="tool-card">
+            <strong>LangChain</strong>
+            <span>RAG pipelines, chunking, chains</span>
+          </div>
+          <div class="tool-card">
+            <strong>Qdrant</strong>
+            <span>Vector database for semantic search</span>
+          </div>
+          <div class="tool-card">
+            <strong>Gradio</strong>
+            <span>Quick web UI for chatbot demos</span>
+          </div>
+        </div>
+        <p class="footnote">Course materials say "Quadrant" in places — we use <strong>Qdrant</strong> (qdrant.tech), the open-source vector DB.</p>
+      </section>
+
+      <section>
+        <h2>Supporting Ecosystem</h2>
+        <ul>
+          <li><strong>Hugging Face</strong> — models, datasets, embeddings</li>
+          <li><strong>Google Colab</strong> — free browser-based Python environment</li>
+          <li><strong>requests + BeautifulSoup</strong> — web scraping (Week 2)</li>
+          <li><strong>PyMuPDF / pdfplumber</strong> — PDF parsing (Week 2)</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Demo: LLM Chatbots in Action</h2>
+        <p><strong>Instructor demo</strong> — show live examples:</p>
+        <ul class="checklist">
+          <li>ChatGPT (or similar) — general-purpose assistant</li>
+          <li>Groq Playground — fast inference, developer-focused</li>
+          <li>Compare: vague question vs specific question</li>
+        </ul>
+        <div class="callout">
+          <p>Ask: <em>"What makes the reply good or bad?"</em> — relevance, tone, factual accuracy.</p>
+        </div>
+      </section>
+
+      <section data-align="center">
+        <h2>Mini-Activity</h2>
+        <div class="activity-box">
+          <p>Brainstorm: Where are chatbots used in the real world?</p>
+          <p class="subtitle">Work in pairs · 5 minutes · Share one idea per team</p>
+        </div>
+        <p style="margin-top: 1.5rem; text-align: center;">Education · HR · Healthcare · Customer support · Legal · News · Campus services</p>
+      </section>
+
+      <section>
+        <h2>Example Project Ideas</h2>
+        <ul>
+          <li><strong>History Chatbot</strong> — Wikipedia or history PDF</li>
+          <li><strong>College Chatbot</strong> — syllabus, grading, campus FAQs</li>
+          <li><strong>Legal / Policy Bot</strong> — contracts or HR documents</li>
+          <li><strong>News Bot</strong> — scraped articles, daily summaries</li>
+        </ul>
+        <p>You'll pick a dataset by Week 2 and ship a full RAG bot by Week 4.</p>
+      </section>
+
+      <section>
+        <h2>Week 1 Roadmap</h2>
+        <ul>
+          <li><strong>Class 1 (today)</strong> — Foundations &amp; concepts</li>
+          <li><strong>Class 2</strong> — Groq API + Hello Chatbot</li>
+          <li><strong>Class 3</strong> — Lab: personalized personality bot</li>
+        </ul>
+      </section>
+
+      <section data-align="center">
+        <h2>Recap</h2>
+        <ul class="checklist" style="display: inline-block; text-align: left;">
+          <li>60+ years: ELIZA → SmarterChild → Siri → ChatGPT → RAG</li>
+          <li>LLMs predict language at scale; Transformers (2017) + GPT made modern chatbots possible</li>
+          <li>Chatbots save time, scale support, and serve many industries</li>
+          <li>Pipeline: User → Input → Processing → Response</li>
+          <li>Tools: Groq, LangChain, Qdrant, Gradio</li>
+        </ul>
+        <p class="subtitle" style="margin-top: 1.5rem;">Next: Class 2 — Calling the Groq API in Python</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>
