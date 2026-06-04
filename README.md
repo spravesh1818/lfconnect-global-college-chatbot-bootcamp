@@ -22,7 +22,7 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 4. Choose your default branch (e.g. `main`) and folder **`/ (root)`**.
 5. Save. The site will be available at:
 
-   `https://<username-or-org>.github.io/global-chatbot-bootcamp/`
+   `https://spravesh1818.github.io/lfconnect-global-college-chatbot-bootcamp/`
 
 The `.nojekyll` file ensures GitHub Pages serves all paths without Jekyll processing.
 
@@ -52,10 +52,12 @@ Visual styling follows [docs/design.md](docs/design.md): dark surfaces (`#121212
 
 Week 1 Class 2 includes a hands-on notebook aligned with the slides: **Python refresher (Sections 1–5)**, then **Groq API (6–15)**, then a **Gradio assignment (Section 16 — students write the code; no solution in the repo)**.
 
-**Open in Google Colab** (after pushing this repo to GitHub, replace `YOUR_GITHUB_USER`):
+**Repository:** [github.com/spravesh1818/lfconnect-global-college-chatbot-bootcamp](https://github.com/spravesh1818/lfconnect-global-college-chatbot-bootcamp)
+
+**Open in Google Colab:**
 
 ```
-https://colab.research.google.com/github/YOUR_GITHUB_USER/global-chatbot-bootcamp/blob/main/week-1/notebooks/hello_chatbot_groq.ipynb
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-1/notebooks/hello_chatbot_groq.ipynb
 ```
 
 **Local Jupyter:** open [week-1/notebooks/hello_chatbot_groq.ipynb](week-1/notebooks/hello_chatbot_groq.ipynb).

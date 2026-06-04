@@ -21,3 +21,8 @@ Images used in course slide decks. Keep this file when reusing materials.
 - **Used in:** Week 1, Class 1 — Follow-along QR slide
 - **Author:** Course materials (LF Connect / TechAxis)
 - **Note:** QR code for in-class scanning; destination encoded in the image
+
+## qr-codes/class-2.png
+
+- **Used in:** Week 1, Class 2 — Follow-along QR slide
+- **Note:** Placeholder path; facilitator adds QR image (repo, Colab, or course site URL)
