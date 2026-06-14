@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class 2 — LangChain Prompts &amp; LangGraph</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/reveal-theme.css">
+</head>
+<body class="deck-page" data-page="class-2">
+  <div class="reveal">
+    <div class="slides">
+
+      <section data-align="center">
+        <h1>LangChain Prompts &amp; LangGraph</h1>
+        <p class="subtitle">Week 2 · Class 2 · Code the Exam Prep Agent</p>
+      </section>
+
+      <section>
+        <h2>Learning Objectives</h2>
+        <ul>
+          <li>Explain why <strong>LangChain</strong> helps build RAG chatbots</li>
+          <li>Code <strong>zero-shot, few-shot, CoT, and zero-shot CoT</strong> with <code>ChatPromptTemplate</code></li>
+          <li>Deep dive on <strong>roles</strong> and <code>MessagesPlaceholder</code></li>
+          <li>Build a <strong>LangGraph</strong> agent with classify → chat / study routing</li>
+          <li>Run and debug a multi-step graph with Groq</li>
+        </ul>
+      </section>
+
+      <section data-align="center">
+        <h2>If you want to follow along</h2>
+        <p class="subtitle">Scan this QR code for the Colab notebook.</p>
+        <figure class="slide-figure qr-slide">
+          <img
+            src="../assets/images/qr-codes/week2-class-2.png"
+            alt="QR code for Week 2 Class 2 Colab notebook"
+          >
+        </figure>
+        <aside class="notes">Pause while students scan. Confirm everyone can open Colab.</aside>
+      </section>
+
+      <section data-align="center">
+        <h2>Open the notebook in Google Colab</h2>
+        <p class="subtitle">Run cells as we go — code on slides matches the notebook.</p>
+        <p style="margin-top: 1rem;">
+          <a
+            href="https://github.com/spravesh1818/lfconnect-global-college-chatbot-bootcamp"
+            target="_blank"
+            rel="noopener"
+          >Course repository on GitHub</a>
+        </p>
+        <p style="margin-top: 1.25rem;">
+          <a
+            class="colab-open-btn"
+            href="https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-2/notebooks/week2_agent_and_data.ipynb"
+            target="_blank"
+            rel="noopener"
+          >Open in Colab</a>
+        </p>
+        <p class="footnote" style="margin-top: 1rem;">
+          Notebook: <code>week-2/notebooks/week2_agent_and_data.ipynb</code>
+        </p>
+        <aside class="notes">Give students 2 minutes to open Colab. Start with Section 1 (setup).</aside>
+      </section>
+
+      <section>
+        <h2>Why LangChain?</h2>
+        <p>Week 1: raw Groq API + message dicts. Week 2+: structured abstractions for production chatbots.</p>
+        <ul>
+          <li><strong>Reusable prompts</strong> — templates with variables</li>
+          <li><strong>Chains</strong> — pipe prompt → LLM → parser</li>
+          <li><strong>LangGraph</strong> — multi-step agents with routing and state</li>
+          <li><strong>RAG-ready</strong> — same patterns we use in Weeks 3–4</li>
+        </ul>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 1–2 — install packages and set Groq API key.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Install &amp; Setup</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 1–2</p>
+        </div>
+        <pre><code class="language-python">!pip install -q langchain langchain-groq langgraph
+
+import os
+from getpass import getpass
+os.environ["GROQ_API_KEY"] = getpass("Groq API key: ")</code></pre>
+        <p class="footnote">Same key from Week 1 — <a href="https://console.groq.com" target="_blank">console.groq.com</a></p>
+      </section>
+
+      <section>
+        <h2>PromptTemplate</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 3 — zero-shot exam summary</p>
+        </div>
+        <pre><code class="language-python">from langchain_core.prompts import PromptTemplate
+
+template = PromptTemplate.from_template(
+    "Summarize key concepts of {topic} for a {duration} exam. "
+    "Use bullets: definition, inputs/outputs, key stages, one exam trap."
+)
+prompt = template.format(topic="photosynthesis", duration="45-minute")
+print(prompt)</code></pre>
+      </section>
+
+      <section>
+        <h2>ChatPromptTemplate</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 3–6 — all four prompting techniques</p>
+        </div>
+        <pre><code class="language-python">from langchain_core.prompts import ChatPromptTemplate
+
+zero_shot = ChatPromptTemplate.from_messages([
+    ("system", "You are a Biology exam tutor."),
+    ("human", "Summarize {topic} for exam revision. Use bullet points."),
+])
+messages = zero_shot.format_messages(topic="photosynthesis")</code></pre>
+      </section>
+
+      <section>
+        <h2>Zero-Shot in LangChain</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 3</p>
+        </div>
+        <pre><code class="language-python">from langchain_groq import ChatGroq
+
+llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.7)
+chain = zero_shot | llm
+response = chain.invoke({"topic": "photosynthesis"})
+print(response.content)</code></pre>
+      </section>
+
+      <section>
+        <h2>Few-Shot in LangChain</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 4 — mitosis example → photosynthesis task</p>
+        </div>
+        <pre><code class="language-python">few_shot = ChatPromptTemplate.from_messages([
+    ("system", "You create exam flashcards in a fixed format."),
+    ("human", "Topic: Mitosis"),
+    ("ai", "- Term: Mitosis\n- Definition: Cell division...\n- Exam tip: ..."),
+    ("human", "Topic: {topic}"),
+])
+chain = few_shot | llm
+print(chain.invoke({"topic": "Photosynthesis"}).content)</code></pre>
+        <p class="footnote"><code>("ai", ...)</code> = assistant role — the model mirrors this format.</p>
+      </section>
+
+      <section>
+        <h2>Chain-of-Thought in LangChain</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 5 — Calvin cycle worked problem</p>
+        </div>
+        <pre><code class="language-python">cot = ChatPromptTemplate.from_messages([
+    ("system", "You are a Biology tutor. Always show reasoning step by step."),
+    ("human", "{problem}"),
+])
+chain = cot | llm
+problem = """A plant fixes 12 CO₂ via the Calvin cycle.
+Walk through each stage. Show reasoning, then state G3P output."""
+print(chain.invoke({"problem": problem}).content)</code></pre>
+      </section>
+
+      <section>
+        <h2>Zero-Shot CoT in LangChain</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 6 — trigger phrase in human message</p>
+        </div>
+        <pre><code class="language-python">zs_cot = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful exam coach."),
+    ("human", """Let's think step by step.
+Compare {topic_a} and {topic_b}.
+End with three revision questions."""),
+])
+chain = zs_cot | llm
+print(chain.invoke({
+    "topic_a": "photosynthesis",
+    "topic_b": "cellular respiration",
+}).content)</code></pre>
+      </section>
+
+      <section>
+        <h2>Roles Deep Dive</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 7–8</p>
+        </div>
+        <table>
+          <thead>
+            <tr><th>LangChain tuple</th><th>API role</th><th>Use in our system</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>("system", ...)</code></td><td>system</td><td>Bot identity, rules, "answer from context only"</td></tr>
+            <tr><td><code>("human", ...)</code></td><td>user</td><td>Current question or task</td></tr>
+            <tr><td><code>("ai", ...)</code></td><td>assistant</td><td>Few-shot examples OR conversation history</td></tr>
+            <tr><td><code>MessagesPlaceholder</code></td><td>assistant/user</td><td>Dynamic multi-turn memory slot</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>MessagesPlaceholder</h2>
+        <pre><code class="language-python">from langchain_core.prompts import MessagesPlaceholder
+
+chat_prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful exam tutor."),
+    MessagesPlaceholder("history"),
+    ("human", "{input}"),
+])
+# history = list of prior HumanMessage / AIMessage objects</code></pre>
+        <div class="callout">
+          <p><strong>Implication:</strong> System = stable rules. Placeholder = growing memory. Few-shot examples go in <code>("ai", ...)</code> turns before the real task.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>From ChatGPT to Code</h2>
+        <p>Class 1 photosynthesis prompts → LangChain templates:</p>
+        <div class="columns">
+          <div>
+            <h3>ChatGPT</h3>
+            <p>Custom Instructions + user message + optional example reply</p>
+          </div>
+          <div>
+            <h3>LangChain</h3>
+            <p><code>ChatPromptTemplate.from_messages([...])</code> + <code>| llm</code></p>
+          </div>
+        </div>
+      </section>
+
+      <section data-align="center">
+        <h2>LangGraph</h2>
+        <p class="subtitle">Notebook Sections 9–14 — multi-step agent with routing</p>
+      </section>
+
+      <section>
+        <h2>Chains vs Graphs</h2>
+        <ul>
+          <li><strong>Chain</strong> — linear: A → B → C (one path)</li>
+          <li><strong>Graph</strong> — branching: classify → chat OR study (multiple paths)</li>
+        </ul>
+        <div class="pipeline">
+          <span class="pipeline__step">classify</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">chat</span>
+          <span style="margin: 0 0.5rem;">or</span>
+          <span class="pipeline__step">study</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">END</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>StateGraph Basics</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 9–11</p>
+        </div>
+        <pre><code class="language-python">from typing import TypedDict, Annotated
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+
+class AgentState(TypedDict):
+    messages: Annotated[list, add_messages]
+    intent: str
+    context_chunks: str</code></pre>
+      </section>
+
+      <section>
+        <h2>Nodes &amp; Edges</h2>
+        <pre><code class="language-python">def classify_node(state: AgentState) -> dict:
+    # ChatPromptTemplate + llm → "chat" or "study"
+    ...
+
+def chat_node(state: AgentState) -> dict:
+    # zero-shot general Q&A
+    ...
+
+def study_node(state: AgentState) -> dict:
+    # few-shot flashcards + CoT for worked problems
+    ...
+
+graph = StateGraph(AgentState)
+graph.add_node("classify", classify_node)
+graph.add_node("chat", chat_node)
+graph.add_node("study", study_node)</code></pre>
+      </section>
+
+      <section>
+        <h2>Conditional Routing</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 12–14</p>
+        </div>
+        <pre><code class="language-python">def route(state: AgentState) -> str:
+    return state["intent"]  # "chat" or "study"
+
+graph.add_edge(START, "classify")
+graph.add_conditional_edges("classify", route, {
+    "chat": "chat",
+    "study": "study",
+})
+graph.add_edge("chat", END)
+graph.add_edge("study", END)
+
+agent = graph.compile()</code></pre>
+      </section>
+
+      <section>
+        <h2>Test the Agent</h2>
+        <p>Exam-prep routing examples:</p>
+        <ul>
+          <li><em>"What is photosynthesis?"</em> → <strong>chat</strong> (zero-shot)</li>
+          <li><em>"Make me flashcards for photosynthesis"</em> → <strong>study</strong> (few-shot)</li>
+          <li><em>"Walk me through this Calvin cycle problem step by step"</em> → <strong>study</strong> (CoT)</li>
+        </ul>
+        <pre><code class="language-python">result = agent.invoke({
+    "messages": [("user", "Make flashcards for photosynthesis")],
+    "intent": "",
+    "context_chunks": "",
+})
+print(result["messages"][-1].content)</code></pre>
+      </section>
+
+      <section>
+        <h2>Common Errors</h2>
+        <table>
+          <thead>
+            <tr><th>Error</th><th>Fix</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>ModuleNotFoundError: langgraph</code></td><td>Re-run <code>pip install langgraph</code></td></tr>
+            <tr><td>Graph returns wrong node</td><td>Check classify prompt; log <code>intent</code></td></tr>
+            <tr><td>State key missing</td><td>Ensure all nodes return required state keys</td></tr>
+            <tr><td>Empty LLM reply</td><td>Verify Groq API key and model name</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Homework Before Class 3</h2>
+        <ul class="checklist">
+          <li>Complete notebook <strong>Sections 1–14</strong> (prompts + LangGraph)</li>
+          <li>Test all three routing examples (chat + 2 study prompts)</li>
+          <li>Extend classify logic if your phrasing differs</li>
+          <li>Bring one error or question to Class 3</li>
+        </ul>
+      </section>
+
+      <section data-align="center">
+        <h2>Recap</h2>
+        <ul class="checklist" style="display: inline-block; text-align: left;">
+          <li>LangChain: <code>ChatPromptTemplate</code> + <code>| llm</code></li>
+          <li>Four techniques coded: zero-shot, few-shot, CoT, zero-shot CoT</li>
+          <li>Roles: system, human, ai, <code>MessagesPlaceholder</code></li>
+          <li>LangGraph: StateGraph, nodes, conditional edges</li>
+        </ul>
+        <p class="subtitle" style="margin-top: 1.5rem;">Next: Class 3 — Scraping, PDF chunking, lab deliverable</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

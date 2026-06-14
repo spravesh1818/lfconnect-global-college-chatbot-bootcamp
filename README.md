@@ -1,6 +1,6 @@
 # Global Chatbot Bootcamp — Course Site
 
-Static teaching site for **Building AI Chatbots with LLMs and RAG**. Week 1 slide decks are live; Weeks 2–4 are stubbed as “Coming soon.”
+Static teaching site for **Building AI Chatbots with LLMs and RAG**. Week 1 and Week 2 slide decks are live; Weeks 3–4 are stubbed as “Coming soon.”
 
 ## Local preview
 
@@ -37,6 +37,15 @@ week-1/
   class-3.html
   notebooks/
     hello_chatbot_groq.ipynb   # Class 2 — Groq API + Hello Chatbot (Google Colab)
+week-2/
+  index.html            # Week 2 hub
+  class-1.html          # Prompt engineering slides
+  class-2.html          # LangChain + LangGraph slides
+  class-3.html          # Scraping + PDF lab slides
+  notebooks/
+    week2_agent_and_data.ipynb # Class 2–3 — LangChain, LangGraph, scraping, chunking
+  data/
+    sample.pdf          # Sample photosynthesis PDF for in-class parsing
 assets/
   css/                  # Design tokens + hub + slide themes
   js/site.js            # Shared navigation
@@ -67,6 +76,28 @@ Students need a free API key from [console.groq.com](https://console.groq.com) b
 **Class 2 homework:** implement the Gradio chat UI described in notebook **Section 16** (system prompt + `chat(messages)`).
 
 **PDF export:** run `./scripts/export-notebook-pdf.sh` or see [docs/export-pdf.md](docs/export-pdf.md) (email the PDF manually, e.g. to spravesh1818@gmail.com).
+
+## Week 2 content
+
+| Class | Topic |
+|-------|--------|
+| 1 | Prompt engineering — zero-shot, few-shot, CoT, zero-shot CoT, CO-STAR/CRISP, exam-prep example |
+| 2 | LangChain `ChatPromptTemplate`, roles deep dive, LangGraph agent — **notebook:** `week-2/notebooks/week2_agent_and_data.ipynb` (Sections 1–14) |
+| 3 | Web scraping (quotes.toscrape.com), PDF parsing + chunking, lab deliverable (Sections 15–25) |
+
+**Week 2 lab deliverable:** LangGraph agent (classify → chat / study) + chunked dataset (scraped JSON + PDF chunks) ready for Week 3 embeddings.
+
+**Open Week 2 notebook in Colab:**
+
+```
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-2/notebooks/week2_agent_and_data.ipynb
+```
+
+**Dependencies (installed in notebook):** `langchain`, `langchain-core`, `langchain-groq`, `langgraph`, `requests`, `beautifulsoup4`, `pymupdf`
+
+**PDF export (Week 2):** `./scripts/export-week2-notebook-pdf.sh`
+
+**QR codes:** add `week2-class-1.png`, `week2-class-2.png`, `week2-class-3.png` under `assets/images/qr-codes/` — see that folder's README.
 
 ## Week 1 content
 

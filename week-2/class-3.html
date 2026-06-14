@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class 3 — Data Collection Lab &amp; Deliverable</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/reveal-theme.css">
+</head>
+<body class="deck-page" data-page="class-3">
+  <div class="reveal">
+    <div class="slides">
+
+      <section data-align="center">
+        <h1>Data Collection Lab</h1>
+        <p class="subtitle">Week 2 · Class 3 · Scraping, PDF &amp; Deliverable</p>
+      </section>
+
+      <section>
+        <h2>Lab Deliverable</h2>
+        <div class="callout">
+          <p><strong>LangGraph Agent + Chunked Dataset</strong></p>
+        </div>
+        <ul>
+          <li><strong>LangGraph agent</strong> — classify → chat / study routing (from Class 2)</li>
+          <li><strong>Scraped dataset</strong> — quotes from quotes.toscrape.com (stretch: books.toscrape.com)</li>
+          <li><strong>PDF chunks</strong> — parse and chunk at least one PDF for Week 3 embeddings</li>
+          <li><strong>Demo</strong> — 2–3 min showing graph routing + sample data</li>
+        </ul>
+      </section>
+
+      <section data-align="center">
+        <h2>Continue the notebook</h2>
+        <p class="subtitle">Sections 15–25 — scraping, PDF, chunking, deliverable</p>
+        <p style="margin-top: 1.25rem;">
+          <a
+            class="colab-open-btn"
+            href="https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-2/notebooks/week2_agent_and_data.ipynb"
+            target="_blank"
+            rel="noopener"
+          >Open in Colab</a>
+        </p>
+        <figure class="slide-figure qr-slide" style="margin-top: 1rem;">
+          <img
+            src="../assets/images/qr-codes/week2-class-3.png"
+            alt="QR code for Week 2 Class 3 lab materials"
+          >
+        </figure>
+      </section>
+
+      <section>
+        <h2>Why Collect Data?</h2>
+        <div class="pipeline">
+          <span class="pipeline__step">Scrape / PDF</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">Clean text</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">Chunk</span>
+          <span class="pipeline__arrow">→</span>
+          <span class="pipeline__step">Embed (Week 3)</span>
+        </div>
+        <p>Your final RAG chatbot answers from <strong>your</strong> data — not just the LLM's training memory.</p>
+      </section>
+
+      <section>
+        <h2>Web Scraping Ethics</h2>
+        <ul class="checklist">
+          <li>Check <code>robots.txt</code> — is scraping allowed?</li>
+          <li>Use <strong>permitted practice sites</strong> (tos scrape.com is built for learning)</li>
+          <li>Add delays between requests — don't hammer servers</li>
+          <li>Respect copyright — scraped text is for your course project only</li>
+          <li>Never scrape login-protected or personal data</li>
+        </ul>
+        <div class="callout callout--warning">
+          <p>In production: get permission, use official APIs when available.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>requests + BeautifulSoup</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 15–18</p>
+        </div>
+        <pre><code class="language-python">!pip install -q requests beautifulsoup4
+
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://quotes.toscrape.com/"
+response = requests.get(url, timeout=10)
+response.raise_for_status()
+soup = BeautifulSoup(response.text, "html.parser")
+
+quotes = []
+for item in soup.select("div.quote"):
+    text = item.select_one("span.text").get_text(strip=True)
+    author = item.select_one("small.author").get_text(strip=True)
+    quotes.append({"text": text, "author": author})
+print(quotes[:3])</code></pre>
+      </section>
+
+      <section>
+        <h2>Save Scraped Data</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 18</p>
+        </div>
+        <pre><code class="language-python">import json
+from pathlib import Path
+
+data_dir = Path("data")
+data_dir.mkdir(exist_ok=True)
+
+with open(data_dir / "scraped_quotes.json", "w") as f:
+    json.dump(quotes, f, indent=2)
+print(f"Saved {len(quotes)} quotes")</code></pre>
+      </section>
+
+      <section>
+        <h2>Stretch: books.toscrape.com</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 19–20 — pagination</p>
+        </div>
+        <ul>
+          <li>Scrape book titles, prices, ratings across pages</li>
+          <li>Follow <code>next</code> links until done (or cap at N pages)</li>
+          <li>Pick books in <strong>your project domain</strong> (history, science, fiction…)</li>
+        </ul>
+        <p class="footnote">Practice site: <a href="https://books.toscrape.com" target="_blank">books.toscrape.com</a></p>
+      </section>
+
+      <section>
+        <h2>PDF Parsing</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Sections 21–22</p>
+        </div>
+        <pre><code class="language-python">!pip install -q pymupdf
+
+import fitz  # PyMuPDF
+
+doc = fitz.open("data/sample.pdf")
+full_text = ""
+for page in doc:
+    full_text += page.get_text()
+print(full_text[:500])</code></pre>
+        <p>Alternative: <code>pdfplumber</code> for table-heavy PDFs.</p>
+      </section>
+
+      <section>
+        <h2>Chunking for Embeddings</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 23</p>
+        </div>
+        <pre><code class="language-python">def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end].strip())
+        start = end - overlap
+    return [c for c in chunks if c]
+
+chunks = chunk_text(full_text)
+print(f"{len(chunks)} chunks, first: {chunks[0][:100]}...")</code></pre>
+        <p>Week 3: each chunk becomes a vector in FAISS / Qdrant.</p>
+      </section>
+
+      <section>
+        <h2>Why Chunk Size Matters</h2>
+        <table>
+          <thead>
+            <tr><th>Chunk size</th><th>Pros</th><th>Cons</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Small (200–400)</td><td>Precise retrieval</td><td>May lose context</td></tr>
+            <tr><td>Medium (500–800)</td><td>Balanced (good default)</td><td>—</td></tr>
+            <tr><td>Large (1000+)</td><td>More context per chunk</td><td>Noisy embeddings</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Overlap</strong> prevents sentences from being cut in half at boundaries.</p>
+      </section>
+
+      <section>
+        <h2>Wire Data into LangGraph</h2>
+        <div class="callout callout--info">
+          <p><strong>Notebook:</strong> Section 24</p>
+        </div>
+        <pre><code class="language-python"># Pass a PDF chunk as context to the study node
+sample_chunk = chunks[0] if chunks else ""
+
+result = agent.invoke({
+    "messages": [("user", "Summarize this for exam revision")],
+    "intent": "",
+    "context_chunks": sample_chunk,
+})</code></pre>
+        <p>The <strong>study</strong> node uses <code>context_chunks</code> in its prompt — preview of RAG.</p>
+      </section>
+
+      <section>
+        <h2>Deliverable Checklist</h2>
+        <div class="callout callout--warning">
+          <p><strong>Notebook:</strong> Section 25 — you complete the full graph extension.</p>
+        </div>
+        <ul class="checklist">
+          <li>LangGraph agent routes chat vs. study correctly (3+ test prompts)</li>
+          <li><code>data/scraped_quotes.json</code> (or books JSON) saved</li>
+          <li>At least one PDF parsed and chunked to <code>data/chunks.json</code></li>
+          <li>Study node uses <code>context_chunks</code> from your dataset</li>
+          <li>Demo ready: graph routing + one scrape sample + one PDF chunk</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Debugging Checklist</h2>
+        <table>
+          <thead>
+            <tr><th>Symptom</th><th>Solution</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>HTTP 403 / timeout</td><td>Check URL, add <code>timeout=</code>, retry later</td></tr>
+            <tr><td>Empty <code>soup.select()</code></td><td>Inspect HTML in browser DevTools; fix CSS selector</td></tr>
+            <tr><td>PDF gibberish text</td><td>Scanned PDF — needs OCR (out of scope); try another PDF</td></tr>
+            <tr><td>LangGraph wrong route</td><td>Improve classify prompt; print <code>intent</code></td></tr>
+            <tr><td>State key error</td><td>All nodes must return every key in <code>AgentState</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Presentation Rubric</h2>
+        <p>When you demo (2–3 min), show:</p>
+        <ol>
+          <li><strong>LangGraph routing</strong> — one chat prompt + one study prompt</li>
+          <li><strong>Scrape sample</strong> — 2–3 quotes or books from your JSON file</li>
+          <li><strong>PDF chunk sample</strong> — one chunk and its source</li>
+          <li><strong>One prompt template</strong> — few-shot or CoT snippet from your code</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Preview: Week 3</h2>
+        <ul>
+          <li><strong>Embeddings</strong> — turn your chunks into vectors</li>
+          <li><strong>Vector databases</strong> — FAISS, Qdrant</li>
+          <li><strong>Retrieval</strong> — fetch relevant chunks before the LLM answers</li>
+          <li><strong>Full RAG</strong> — your Week 2 dataset powers the chatbot</li>
+        </ul>
+        <div class="callout callout--info">
+          <p>The chunked dataset you build today is the knowledge base for your final RAG bot.</p>
+        </div>
+      </section>
+
+      <section data-align="center">
+        <h2>Week 2 Complete</h2>
+        <ul class="checklist" style="display: inline-block; text-align: left;">
+          <li>Four prompting techniques + frameworks</li>
+          <li>LangChain templates + LangGraph agent</li>
+          <li>Scraped web data + chunked PDF dataset</li>
+          <li>Ready for embeddings in Week 3</li>
+        </ul>
+        <p class="subtitle" style="margin-top: 1.5rem;">Questions? Open office hours · See you in Week 3</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

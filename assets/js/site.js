@@ -3,66 +3,90 @@
 
   var WEEKS = [
     { id: "week-1", label: "Week 1", active: true },
-    { id: "week-2", label: "Week 2", active: false },
+    { id: "week-2", label: "Week 2", active: true },
     { id: "week-3", label: "Week 3", active: false },
     { id: "week-4", label: "Week 4", active: false },
   ];
 
-  var CLASSES_WEEK1 = [
-    { id: "class-1", label: "Class 1 — Foundations", shortLabel: "Class 1", href: "class-1.html" },
-    { id: "class-2", label: "Class 2 — Groq API", shortLabel: "Class 2", href: "class-2.html" },
-    { id: "class-3", label: "Class 3 — Lab & Project", shortLabel: "Class 3", href: "class-3.html" },
-  ];
+  var CLASSES = {
+    "week-1": [
+      { id: "class-1", label: "Class 1 — Foundations", shortLabel: "Class 1", href: "class-1.html" },
+      { id: "class-2", label: "Class 2 — Groq API", shortLabel: "Class 2", href: "class-2.html" },
+      { id: "class-3", label: "Class 3 — Lab & Project", shortLabel: "Class 3", href: "class-3.html" },
+    ],
+    "week-2": [
+      { id: "class-1", label: "Class 1 — Prompt Engineering", shortLabel: "Class 1", href: "class-1.html" },
+      { id: "class-2", label: "Class 2 — LangChain & LangGraph", shortLabel: "Class 2", href: "class-2.html" },
+      { id: "class-3", label: "Class 3 — Data Collection Lab", shortLabel: "Class 3", href: "class-3.html" },
+    ],
+  };
 
   function getNavContext() {
     var path = window.location.pathname;
-    if (path.includes("/week-1/") || path.endsWith("/week-1")) {
-      return "week-1";
-    }
+    if (path.includes("/week-1/") || path.endsWith("/week-1")) return "week-1";
+    if (path.includes("/week-2/") || path.endsWith("/week-2")) return "week-2";
     return "root";
   }
 
-  function linkHome() {
-    return getNavContext() === "week-1" ? "../index.html" : "index.html";
+  function getCurrentWeek() {
+    var ctx = getNavContext();
+    return ctx === "root" ? null : ctx;
   }
 
-  function linkWeek1() {
-    return getNavContext() === "week-1" ? "index.html" : "week-1/index.html";
+  function linkHome() {
+    var week = getCurrentWeek();
+    return week ? "../index.html" : "index.html";
+  }
+
+  function linkWeek(weekId) {
+    var current = getCurrentWeek();
+    if (current === weekId) return "index.html";
+    if (current) return "../" + weekId + "/index.html";
+    return weekId + "/index.html";
   }
 
   function linkClass(classHref) {
-    return getNavContext() === "week-1"
-      ? classHref
-      : "week-1/" + classHref;
+    var current = getCurrentWeek();
+    if (current) return classHref;
+    var week = getNavContext() === "root" ? "week-1" : getNavContext();
+    return week + "/" + classHref;
+  }
+
+  function getWeekClasses(weekId) {
+    return CLASSES[weekId] || [];
   }
 
   function renderSidebar(page) {
     var shell = document.querySelector(".site-shell");
     if (!shell) return;
 
+    var currentWeek = getCurrentWeek();
     var weekSubNav = "";
-    if (page === "week-1" || page.startsWith("class-")) {
+
+    if (currentWeek && (page === currentWeek || page.startsWith("class-"))) {
       weekSubNav =
         '<div class="site-nav__sub">' +
-        CLASSES_WEEK1.map(function (c) {
-          var active = page === c.id ? " is-active" : "";
-          return (
-            '<a class="site-nav__link' +
-            active +
-            '" href="' +
-            linkClass(c.href) +
-            '">' +
-            c.label +
-            "</a>"
-          );
-        }).join("") +
+        getWeekClasses(currentWeek)
+          .map(function (c) {
+            var active = page === c.id ? " is-active" : "";
+            return (
+              '<a class="site-nav__link' +
+              active +
+              '" href="' +
+              linkClass(c.href) +
+              '">' +
+              c.label +
+              "</a>"
+            );
+          })
+          .join("") +
         "</div>";
     }
 
     var weekLinks = WEEKS.map(function (w) {
-      var href = w.active && w.id === "week-1" ? linkWeek1() : "#";
+      var href = w.active ? linkWeek(w.id) : "#";
       var classes = "site-nav__link";
-      if (page === w.id || (w.id === "week-1" && page.startsWith("class-")))
+      if (page === w.id || (currentWeek === w.id && page.startsWith("class-")))
         classes += " is-active";
       if (!w.active) classes += " is-disabled";
       return (
@@ -102,16 +126,20 @@
   }
 
   function renderDeckTopbar(page) {
+    var currentWeek = getCurrentWeek();
+    if (!currentWeek) return;
+
     var topbar = document.createElement("nav");
     topbar.className = "deck-topbar";
     topbar.setAttribute("aria-label", "Slide deck navigation");
 
+    var weekLabel = currentWeek === "week-1" ? "Week 1" : "Week 2";
     var crumbs = [
       { label: "Home", href: linkHome(), active: false },
-      { label: "Week 1", href: linkWeek1(), active: page === "week-1" },
+      { label: weekLabel, href: linkWeek(currentWeek), active: page === currentWeek },
     ];
 
-    CLASSES_WEEK1.forEach(function (c) {
+    getWeekClasses(currentWeek).forEach(function (c) {
       crumbs.push({
         label: c.shortLabel,
         href: linkClass(c.href),
