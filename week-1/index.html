@@ -1,70 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Week 1 — Chatbot Foundations &amp; LLM APIs</title>
-  <link rel="stylesheet" href="../assets/css/site.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 1 — Chatbot Foundations &amp; LLM APIs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --phosphor:#3dff6e;
+  --phosphor-dim:#1c8a3d;
+  --amber:#ffb454;
+  --bg:#060a06;
+  --bg-panel:#0c130c;
+  --line:rgba(61,255,110,0.22);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--phosphor);font-family:'Space Mono',monospace;line-height:1.5;}
+a{color:inherit;text-decoration:none;}
+
+body{
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px) 0 0/100% 40px;
+}
+
+.wrap{max-width:920px;margin:0 auto;padding:56px 28px 96px;}
+
+.crumb{font-size:15px;color:var(--phosphor-dim);margin-bottom:32px;}
+.crumb a{color:var(--phosphor);}
+.crumb a:hover{text-decoration:underline;}
+
+.term-window{
+  border:1px solid var(--line);
+  background:var(--bg-panel);
+  box-shadow:0 0 40px rgba(61,255,110,0.06);
+}
+.term-titlebar{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--phosphor-dim);letter-spacing:1px;
+}
+.term-titlebar .dot{width:11px;height:11px;border-radius:50%;background:var(--phosphor-dim);}
+.term-titlebar .path{margin-left:auto;}
+
+.term-body{padding:36px;}
+
+h1.term-h1{
+  font-family:'VT323', monospace;
+  font-size:72px;
+  color:var(--phosphor);
+  text-shadow:0 0 8px rgba(61,255,110,0.4);
+  line-height:1.05;
+}
+.term-p{
+  margin-top:16px;
+  font-size:16px;
+  color:#bfe9cc;
+  max-width:640px;
+}
+
+.ls-label{
+  margin-top:44px;
+  font-size:15px;
+  color:var(--phosphor-dim);
+}
+.ls-label::before{content:"$ ";color:var(--phosphor);}
+
+.class-list{margin-top:20px;display:flex;flex-direction:column;gap:14px;}
+
+a.class-row{
+  display:flex;align-items:center;gap:18px;
+  padding:18px 20px;
+  border:1px solid var(--line);
+  background:rgba(61,255,110,0.03);
+  transition:background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+a.class-row:hover{
+  background:rgba(61,255,110,0.08);
+  border-color:var(--phosphor-dim);
+  transform:translateX(4px);
+}
+.class-row .idx{
+  font-family:'VT323', monospace;
+  font-size:34px;
+  color:var(--phosphor-dim);
+  width:44px;flex-shrink:0;
+}
+.class-row .body{flex:1;min-width:0;}
+.class-row .name{font-size:17px;font-weight:700;color:var(--phosphor);}
+.class-row .desc{margin-top:6px;font-size:14px;color:#9fcaab;}
+.class-row .meta{margin-top:8px;font-size:12px;color:var(--phosphor-dim);}
+.class-row .arrow{color:var(--amber);font-size:20px;flex-shrink:0;}
+
+.banner{
+  margin-top:44px;
+  border-left:3px solid var(--amber);
+  background:rgba(255,180,84,0.06);
+  padding:22px 24px;
+}
+.banner h2{font-family:'VT323', monospace;font-size:26px;color:var(--amber);letter-spacing:1px;}
+.banner p{margin-top:10px;font-size:14.5px;color:#e6d3b0;}
+.banner ol{margin:14px 0 0 20px;font-size:14px;color:#e6d3b0;}
+.banner li{margin-bottom:6px;}
+
+.banner.info{border-left-color:var(--phosphor);background:rgba(61,255,110,0.05);}
+.banner.info h2{color:var(--phosphor);}
+.banner.info a{color:var(--phosphor);text-decoration:underline;}
+
+footer{margin-top:40px;font-size:14px;color:var(--phosphor-dim);}
+footer a{color:var(--phosphor);}
+footer a:hover{text-decoration:underline;}
+</style>
 </head>
-<body data-page="week-1">
-  <div class="site-shell">
-    <main class="site-main">
-      <header class="site-header">
-        <h1>Week 1 — Chatbot Foundations &amp; LLM APIs</h1>
-        <p>Understand how chatbots work, call the Groq API from Python, and build a personalized chatbot with a custom personality.</p>
-      </header>
+<body>
+<div class="wrap">
+  <p class="crumb"><a href="../index.html">~/bootcamp</a> / week-1</p>
 
-      <section aria-label="Week 1 classes">
-        <div class="card-grid">
-          <a class="card" href="class-1.html">
-            <span class="card__badge">Class 1</span>
-            <h2>What is a Chatbot &amp; How it Works</h2>
-            <p>Evolution from rule-based to LLM-powered bots, the high-level pipeline, tools overview, and a domain brainstorm activity.</p>
-            <span class="btn btn--primary">Open Slides</span>
-          </a>
+  <div class="term-window">
+    <div class="term-titlebar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="path">week-1/foundations.sh</span>
+    </div>
+    <div class="term-body">
+      <h1 class="term-h1">Week 1 — Chatbot Foundations &amp; LLM APIs</h1>
+      <p class="term-p">Understand how chatbots work, call the Groq API from Python, and build a personalized chatbot with a custom personality.</p>
 
-          <a class="card" href="class-2.html">
-            <span class="card__badge">Class 2</span>
-            <h2>Calling an LLM API (Groq)</h2>
-            <p>Python refresher (print, variables, if, loops, functions), Groq API, message roles, Hello Chatbot REPL, and a Gradio assignment you build yourself.</p>
-            <span class="card__meta">Includes Colab notebook · hello_chatbot_groq.ipynb</span>
-            <span class="btn btn--primary">Open Slides</span>
-          </a>
+      <p class="ls-label">ls ./classes</p>
+      <div class="class-list">
+        <a class="class-row" href="class-1.html">
+          <span class="idx">01</span>
+          <span class="body">
+            <div class="name">What is a Chatbot &amp; How it Works</div>
+            <div class="desc">Evolution from rule-based to LLM-powered bots, the pipeline, tools overview, and a domain brainstorm activity.</div>
+          </span>
+          <span class="arrow">&gt;</span>
+        </a>
+        <a class="class-row" href="class-2.html">
+          <span class="idx">02</span>
+          <span class="body">
+            <div class="name">Calling an LLM API (Groq)</div>
+            <div class="desc">Python refresher, Groq API, message roles, Hello Chatbot REPL, and a Gradio assignment you build yourself.</div>
+            <div class="meta">includes notebook · hello_chatbot_groq.ipynb</div>
+          </span>
+          <span class="arrow">&gt;</span>
+        </a>
+        <a class="class-row" href="class-3.html">
+          <span class="idx">03</span>
+          <span class="body">
+            <div class="name">Lab &amp; Student Project</div>
+            <div class="desc">Customize chatbot personalities, debug API issues, and deliver your personalized Groq chatbot.</div>
+          </span>
+          <span class="arrow">&gt;</span>
+        </a>
+      </div>
 
-          <a class="card" href="class-3.html">
-            <span class="card__badge">Class 3</span>
-            <h2>Lab &amp; Student Project</h2>
-            <p>Customize chatbot personalities, debug API issues, and deliver your personalized Groq chatbot.</p>
-            <span class="btn btn--primary">Open Slides</span>
-          </a>
-        </div>
-      </section>
-
-      <section class="lab-banner" aria-label="Week 1 lab deliverable">
+      <div class="banner">
         <h2>Lab Deliverable</h2>
         <p><strong>Personalized Chatbot using Groq API</strong> — students choose a personality (teacher bot, joke bot, travel guide bot) via system prompts and demo a working CLI or script chatbot.</p>
-        <ul class="class-list">
-          <li><span class="class-list__num">1</span> Complete Hello Chatbot from Class 2</li>
-          <li><span class="class-list__num">2</span> Add a system prompt defining personality and tone</li>
-          <li><span class="class-list__num">3</span> Test with 3+ example questions and fix any API errors</li>
-        </ul>
-      </section>
+        <ol>
+          <li>Complete Hello Chatbot from Class 2</li>
+          <li>Add a system prompt defining personality and tone</li>
+          <li>Test with 3+ example questions and fix any API errors</li>
+        </ol>
+      </div>
 
-      <section class="lab-banner" aria-label="Class 2 Colab notebook">
+      <div class="banner info">
         <h2>Class 2 — Colab notebook</h2>
         <p>
-          <a href="https://github.com/spravesh1818/lfconnect-global-college-chatbot-bootcamp" target="_blank" rel="noopener">Course repository on GitHub</a>
-        </p>
-        <p style="margin-top: 0.75rem;">
+          <a href="https://github.com/spravesh1818/lfconnect-global-college-chatbot-bootcamp" target="_blank" rel="noopener">Course repository on GitHub</a><br>
           <a href="https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-1/notebooks/hello_chatbot_groq.ipynb" target="_blank" rel="noopener">Open hello_chatbot_groq.ipynb in Google Colab</a>
         </p>
-      </section>
+      </div>
 
-      <footer class="site-footer">
-        <p><a href="../index.html">← Back to course home</a></p>
-      </footer>
-    </main>
+      <footer><a href="../index.html">&lt; back to course home</a></footer>
+    </div>
   </div>
-  <script src="../assets/js/site.js"></script>
+</div>
 </body>
 </html>

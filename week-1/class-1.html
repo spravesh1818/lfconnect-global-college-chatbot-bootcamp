@@ -1,172 +1,393 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Class 1 — What is a Chatbot &amp; How it Works</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
-  <link rel="stylesheet" href="../assets/css/site.css">
-  <link rel="stylesheet" href="../assets/css/reveal-theme.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class 1 — What is a Chatbot &amp; How it Works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TERMINAL DECK ENGINE — Week 1 shared theme
+   Phosphor-green CRT terminal aesthetic. All Week 1 class decks
+   (class-1/2/3) reuse this exact block.
+   ============================================================ */
+:root{
+  --phosphor:#3dff6e;
+  --phosphor-dim:#1c8a3d;
+  --amber:#ffb454;
+  --err:#ff6b6b;
+  --bg:#060a06;
+  --bg-panel:#0b120b;
+  --line:rgba(61,255,110,0.22);
+  --ink:#bfe9cc;
+  --white:#eafff1;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* === FIXED 16:9 STAGE (viewport-base.css) === */
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--slide-bg,#fff);}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;background:var(--slide-bg,#fff);}
+.slide.active,.slide.visible{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+.deck-controls{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;}
+@media print{
+  html,body{width:1920px;height:auto;overflow:visible;background:#fff;}
+  .deck-viewport{position:static;overflow:visible;background:#fff;}
+  .deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none;}
+  .slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always;}
+  .slide:last-child{break-after:auto;page-break-after:auto;}
+  .deck-controls{display:none!important;}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important;}}
+/* === END viewport-base.css === */
+
+body{font-family:'Space Mono',monospace;}
+.deck-stage{
+  background:
+    linear-gradient(var(--line) 1px, transparent 1px) 0 0/100% 44px,
+    var(--bg);
+}
+.slide{background:transparent;}
+
+/* scanline + vignette overlay, sits above all slides */
+.crt-overlay{
+  position:absolute;inset:0;pointer-events:none;z-index:50;
+  background:
+    repeating-linear-gradient(180deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0.10) 1px, rgba(0,0,0,0) 3px),
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.45) 100%);
+  mix-blend-mode:multiply;
+}
+
+/* === persistent chrome: lives outside .slide, always visible === */
+.deck-chrome-top{
+  position:absolute;top:0;left:0;right:0;height:84px;z-index:40;
+  display:flex;align-items:center;gap:14px;
+  padding:0 64px;
+  border-bottom:1px solid var(--line);
+  background:rgba(6,10,6,0.75);
+  font-size:20px;color:var(--phosphor-dim);letter-spacing:2px;
+}
+.deck-chrome-top .dot{width:13px;height:13px;border-radius:50%;background:var(--phosphor-dim);}
+.deck-chrome-top .path{color:var(--phosphor);}
+.deck-chrome-top .hub-link{color:var(--phosphor);text-decoration:none;border:1px solid var(--line);padding:3px 12px;font-size:16px;letter-spacing:1px;transition:background 0.15s ease, border-color 0.15s ease;}
+.deck-chrome-top .hub-link:hover{background:rgba(61,255,110,0.08);border-color:var(--phosphor-dim);}
+.deck-chrome-top .weekmeta{margin-left:auto;text-transform:uppercase;font-size:17px;}
+
+.deck-chrome-bottom{
+  position:absolute;bottom:0;left:0;right:0;height:64px;z-index:40;
+  display:flex;align-items:center;
+  padding:0 64px;
+  font-size:18px;color:var(--phosphor-dim);
+}
+.deck-chrome-bottom .counter{font-weight:700;color:var(--phosphor);}
+.deck-chrome-bottom .hint{margin-left:auto;}
+.deck-chrome-bottom .hint kbd{
+  display:inline-block;border:1px solid var(--line);border-radius:4px;
+  padding:2px 8px;margin:0 2px;color:var(--ink);
+}
+.progress-track{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(61,255,110,0.08);z-index:41;}
+.progress-fill{height:100%;background:var(--phosphor);box-shadow:0 0 8px var(--phosphor);transition:width 0.3s ease;}
+
+/* === slide inner layout === */
+.slide-inner{
+  position:absolute;
+  top:140px;left:150px;right:150px;bottom:120px;
+  display:flex;flex-direction:column;
+}
+.slide.center .slide-inner{align-items:center;justify-content:center;text-align:center;}
+
+.eyebrow{
+  font-size:22px;font-weight:700;letter-spacing:4px;text-transform:uppercase;
+  color:var(--amber);margin-bottom:18px;
+}
+h2{
+  font-family:'VT323', monospace;
+  font-size:68px;font-weight:400;color:var(--phosphor);
+  text-shadow:0 0 10px rgba(61,255,110,0.35);
+  letter-spacing:0.5px;line-height:1.05;margin-bottom:32px;
+}
+.slide p{font-size:28px;color:var(--ink);line-height:1.55;}
+.slide strong{color:var(--white);font-weight:700;}
+.slide a{color:var(--phosphor);text-decoration:underline;}
+.subtitle{font-size:26px;color:var(--phosphor-dim);margin-top:10px;}
+.footnote{font-size:20px;color:var(--phosphor-dim);margin-top:24px;}
+
+ul, ol{margin-left:40px;}
+.slide li{font-size:28px;color:var(--ink);line-height:1.5;margin-bottom:14px;}
+ul.checklist{list-style:none;margin-left:0;}
+ul.checklist li{padding-left:36px;position:relative;}
+ul.checklist li::before{content:"> ";color:var(--phosphor);font-weight:700;position:absolute;left:0;}
+
+/* code blocks */
+pre{
+  background:var(--bg-panel);border:1px solid var(--line);border-left:4px solid var(--phosphor);
+  padding:32px 36px;margin-top:20px;overflow:hidden;
+}
+pre code{
+  font-family:'Space Mono',monospace;font-size:23px;line-height:1.5;color:var(--ink);white-space:pre;
+}
+.kw{color:var(--amber);font-weight:700;}
+.str{color:var(--phosphor);}
+.cm{color:var(--phosphor-dim);font-style:italic;}
+
+/* two-column */
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:64px;}
+.columns h3{font-family:'VT323',monospace;font-size:34px;color:var(--amber);margin-bottom:14px;letter-spacing:0.5px;}
+
+/* callouts */
+.callout{
+  border-left:4px solid var(--phosphor);background:rgba(61,255,110,0.05);
+  padding:26px 32px;margin-top:24px;font-size:26px;color:var(--ink);
+}
+.callout--warning{border-left-color:var(--amber);background:rgba(255,180,84,0.06);}
+.callout--error{border-left-color:var(--err);background:rgba(255,107,107,0.06);}
+
+/* tables */
+table{width:100%;border-collapse:collapse;margin-top:20px;font-size:24px;}
+th{background:var(--bg-panel);color:var(--phosphor);text-align:left;padding:16px 20px;font-weight:700;}
+td{border-top:1px solid var(--line);padding:16px 20px;color:var(--ink);}
+
+/* tool grid */
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;}
+.tool-card{border:1px solid var(--line);background:rgba(61,255,110,0.03);padding:28px 30px;}
+.tool-card strong{display:block;color:var(--phosphor);font-size:28px;margin-bottom:8px;}
+.tool-card span{font-size:22px;color:var(--phosphor-dim);}
+
+/* timeline */
+.timeline{display:flex;flex-direction:column;gap:22px;margin-top:16px;}
+.timeline-item{display:flex;gap:32px;align-items:flex-start;}
+.timeline-era{flex-shrink:0;width:150px;font-size:24px;font-weight:700;color:var(--amber);letter-spacing:1px;}
+.timeline-item div p{font-size:24px;margin-top:4px;}
+.timeline-item strong{font-size:27px;color:var(--phosphor);}
+
+/* activity box */
+.activity-box{
+  border:2px dashed var(--phosphor-dim);padding:48px 56px;text-align:center;margin-top:8px;
+}
+.activity-box p{font-size:32px;color:var(--white);font-weight:700;}
+.activity-box .subtitle{margin-top:12px;font-size:24px;}
+
+/* pipeline */
+.pipeline{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;margin:32px 0;}
+.pipeline-step{background:var(--bg-panel);border:1px solid var(--phosphor);padding:18px 32px;font-size:26px;font-weight:700;color:var(--white);}
+.pipeline-arrow{color:var(--amber);font-size:34px;}
+
+/* facilitator */
+.facilitator{display:grid;grid-template-columns:320px 1fr;gap:56px;align-items:center;}
+.facilitator img{width:100%;border:2px solid var(--phosphor);filter:grayscale(0.3) contrast(1.05);box-shadow:0 0 30px rgba(61,255,110,0.15);}
+.facilitator h3{font-family:'VT323',monospace;font-size:44px;color:var(--phosphor);}
+.facilitator .role{font-size:22px;color:var(--amber);margin-top:6px;}
+.facilitator p{margin-top:16px;font-size:25px;}
+.tag-row{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;}
+.tag-row span{border:1px solid var(--phosphor-dim);color:var(--phosphor);font-size:18px;letter-spacing:1px;text-transform:uppercase;padding:6px 16px;}
+
+/* qr figure */
+.qr-figure{text-align:center;margin-top:24px;}
+.qr-figure img{max-width:340px;background:#fff;padding:16px;border:2px solid var(--phosphor);}
+.qr-figure figcaption{margin-top:14px;font-size:20px;color:var(--phosphor-dim);}
+
+/* colab button */
+.colab-btn{
+  display:inline-block;background:var(--amber);color:#0a0a0a!important;font-weight:700;
+  font-size:24px;text-transform:uppercase;letter-spacing:2px;padding:16px 40px;
+  text-decoration:none!important;margin-top:8px;
+}
+
+/* title slide */
+.title-slide .slide-inner{justify-content:center;}
+.title-slide h1{
+  font-family:'VT323', monospace;font-size:150px;line-height:1.0;color:var(--phosphor);
+  text-shadow:0 0 12px rgba(61,255,110,0.5), 0 0 50px rgba(61,255,110,0.2);
+}
+.title-slide .subtitle{font-size:32px;color:var(--amber);margin-top:24px;}
+.prompt-line{color:var(--phosphor-dim);font-size:26px;margin-bottom:20px;}
+
+/* reveal-on-enter animation */
+.slide .r{opacity:0;transform:translateY(20px);transition:opacity 0.5s ease-out, transform 0.5s ease-out;}
+.slide.active .r{opacity:1;transform:translateY(0);}
+.slide .r:nth-child(1){transition-delay:0.05s;}
+.slide .r:nth-child(2){transition-delay:0.15s;}
+.slide .r:nth-child(3){transition-delay:0.25s;}
+.slide .r:nth-child(4){transition-delay:0.35s;}
+.slide .r:nth-child(5){transition-delay:0.45s;}
+</style>
 </head>
-<body class="deck-page" data-page="class-1">
-  <div class="reveal">
-    <div class="slides">
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
 
-      <section data-align="center">
-        <h1>What is a Chatbot &amp; How it Works</h1>
-        <p class="subtitle">Week 1 · Class 1 · Chatbot Foundations</p>
-      </section>
+    <!-- persistent chrome -->
+    <div class="deck-chrome-top">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <a class="hub-link" href="index.html">&larr; Hub</a>
+      <span class="path">week-1/class-1.sh</span>
+      <span class="weekmeta">Week 1 · Class 1</span>
+    </div>
 
-      <section>
-        <h2>About your facilitator</h2>
-        <div class="facilitator">
-          <img
-            class="facilitator__photo"
-            src="../assets/images/my_image.jpg"
-            alt="Pravesh Chapagain"
-          >
-          <div class="facilitator__content">
-            <h2>Pravesh Chapagain</h2>
-            <p class="facilitator__role">Software Engineer · AI/Prompt practitioner · Workshop facilitator</p>
-            <p class="facilitator__bio">I work where engineering, AI workflows, and teaching meet. Today I will give you the same map I use to build chatbots and keep up with generative AI without getting overwhelmed.</p>
+    <!-- 1 -->
+    <section class="slide active center title-slide">
+      <div class="slide-inner">
+        <p class="prompt-line r">$ ./run --class=1 --topic="chatbot-foundations"</p>
+        <h1 class="r">What is a<br>Chatbot?</h1>
+        <p class="subtitle r">Week 1 · Class 1 · Chatbot Foundations</p>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">Before we start</p>
+        <h2 class="r">About Your Facilitator</h2>
+        <div class="facilitator r">
+          <img src="../assets/images/my_image.jpg" alt="Pravesh Chapagain">
+          <div>
+            <h3>Pravesh Chapagain</h3>
+            <p class="role">Software Engineer · AI/Prompt practitioner · Workshop facilitator</p>
+            <p>I work where engineering, AI workflows, and teaching meet. Today I'll give you the same map I use to build chatbots and keep up with generative AI without getting overwhelmed.</p>
             <div class="tag-row">
-              <span>Engineering</span>
-              <span>AI workflows</span>
-              <span>Teaching</span>
+              <span>Engineering</span><span>AI workflows</span><span>Teaching</span>
             </div>
           </div>
         </div>
-        <aside class="notes">Keep this under 60 seconds. Share one short story about how AI or chatbots changed your workflow.</aside>
-      </section>
+      </div>
+      <!-- notes: Keep under 60 seconds. Share one short story about how AI or chatbots changed your workflow. -->
+    </section>
 
-      <section data-align="center">
-        <h2>If you want to follow along</h2>
-        <p class="subtitle">Scan this QR code to open the lesson materials.</p>
-        <figure class="slide-figure qr-slide">
-          <img
-            src="../assets/images/qr-codes/class-1.png"
-            alt="QR code for Class 1 lesson materials"
-          >
+    <!-- 3 -->
+    <section class="slide center">
+      <div class="slide-inner">
+        <h2 class="r">Follow Along</h2>
+        <p class="subtitle r">Scan this QR code to open the lesson materials.</p>
+        <figure class="qr-figure r">
+          <img src="../assets/images/qr-codes/class-1.png" alt="QR code for Class 1 lesson materials">
         </figure>
-        <aside class="notes">Pause while students scan. Confirm everyone can open the materials on their phone.</aside>
-      </section>
+      </div>
+      <!-- notes: Pause while students scan. Confirm everyone can open the materials on their phone. -->
+    </section>
 
-      <section data-align="center">
-        <h2>Quick survey</h2>
-        <div class="activity-box">
-          <p>Raise your hand if you have used <strong>Python</strong> before</p>
+    <!-- 4 -->
+    <section class="slide center">
+      <div class="slide-inner">
+        <h2 class="r">Quick Survey</h2>
+        <div class="activity-box r">
+          <p>Raise your hand if you have used Python before</p>
           <p class="subtitle">Any amount counts — school, work, tutorials, or personal projects</p>
         </div>
-        <p style="margin-top: 1.25rem; text-align: center; font-size: 0.85em;">No Python yet? That is fine — <strong>Class 2</strong> starts with a short Python refresher, then Groq.</p>
-        <aside class="notes">Count hands. Adjust Class 2 pacing if most of the room is new to Python.</aside>
-      </section>
+        <p class="footnote r" style="text-align:center;">No Python yet? That's fine — Class 2 starts with a short Python refresher, then Groq.</p>
+      </div>
+      <!-- notes: Count hands. Adjust Class 2 pacing if most of the room is new to Python. -->
+    </section>
 
-      <section>
-        <h2>Learning Objectives</h2>
-        <ul>
+    <!-- 5 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Learning Objectives</h2>
+        <ul class="r">
           <li>Describe how chatbots evolved from rule-based to LLM-powered systems</li>
           <li>Explain the high-level chatbot pipeline</li>
           <li>Name key tools used in this course</li>
           <li>Identify real-world domains where chatbots add value</li>
         </ul>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>What is a Chatbot?</h2>
-        <p>A <strong>chatbot</strong> is software that converses with users through natural language — text or voice — to answer questions, complete tasks, or guide decisions.</p>
-        <div class="callout">
+    <!-- 6 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">What is a Chatbot?</h2>
+        <p class="r">A <strong>chatbot</strong> is software that converses with users through natural language — text or voice — to answer questions, complete tasks, or guide decisions.</p>
+        <div class="callout r">
           <p>Modern chatbots don't just match keywords; many use <strong>large language models (LLMs)</strong> to understand intent and generate human-like replies.</p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="slide-timeline">
-        <h2>History of Chatbots</h2>
-        <p class="subtitle" style="margin-top: 0;">Origins · 1964–1999</p>
-        <div class="timeline">
-          <div class="timeline__item">
-            <span class="timeline__era">1966</span>
-            <div>
-              <strong>ELIZA</strong> (MIT, Joseph Weizenbaum)
-              <p>Pattern matching + keyword rules. The DOCTOR script simulated a Rogerian therapist. Created the <em>illusion</em> of understanding — not real comprehension.</p>
-            </div>
+    <!-- 7 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">History of Chatbots · Origins 1964–1999</p>
+        <h2 class="r">Rules &amp; Scripts</h2>
+        <div class="timeline r">
+          <div class="timeline-item">
+            <span class="timeline-era">1966</span>
+            <div><strong>ELIZA</strong> (MIT, Joseph Weizenbaum)<p>Pattern matching + keyword rules. The DOCTOR script simulated a Rogerian therapist — created the <em>illusion</em> of understanding, not real comprehension.</p></div>
           </div>
-          <div class="timeline__item">
-            <span class="timeline__era">1972</span>
-            <div>
-              <strong>PARRY</strong>
-              <p>Simulated a paranoid patient. Used in early Turing Test experiments alongside ELIZA.</p>
-            </div>
+          <div class="timeline-item">
+            <span class="timeline-era">1972</span>
+            <div><strong>PARRY</strong><p>Simulated a paranoid patient. Used in early Turing Test experiments alongside ELIZA.</p></div>
           </div>
-          <div class="timeline__item">
-            <span class="timeline__era">1995</span>
-            <div>
-              <strong>ALICE</strong> (Richard Wallace)
-              <p>AIML (Artificial Intelligence Markup Language); 50,000+ pattern categories. Open-source and hobbyist-friendly.</p>
-            </div>
+          <div class="timeline-item">
+            <span class="timeline-era">1995</span>
+            <div><strong>ALICE</strong> (Richard Wallace)<p>AIML markup language; 50,000+ pattern categories. Open-source and hobbyist-friendly.</p></div>
           </div>
         </div>
-        <p class="footnote">Key idea: conversation via <strong>scripts and rules</strong>, not learning from data.</p>
-      </section>
+        <p class="footnote r">Key idea: conversation via <strong>scripts and rules</strong>, not learning from data.</p>
+      </div>
+    </section>
 
-      <section class="slide-timeline">
-        <h2>History of Chatbots</h2>
-        <p class="subtitle" style="margin-top: 0;">Web &amp; mobile era · 2001–2019</p>
-        <div class="timeline">
-          <div class="timeline__item">
-            <span class="timeline__era">2001</span>
-            <div>
-              <strong>SmarterChild</strong> (AIM, MSN, Yahoo)
-              <p>First mass-market chatbot — 30M+ users. Human-curated responses: accurate but inflexible; no hallucinations.</p>
-            </div>
+    <!-- 8 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">History of Chatbots · Web &amp; mobile era 2001–2019</p>
+        <h2 class="r">Assistants Go Mainstream</h2>
+        <div class="timeline r">
+          <div class="timeline-item">
+            <span class="timeline-era">2001</span>
+            <div><strong>SmarterChild</strong> (AIM, MSN, Yahoo)<p>First mass-market chatbot — 30M+ users. Human-curated responses: accurate but inflexible.</p></div>
           </div>
-          <div class="timeline__item">
-            <span class="timeline__era">2011</span>
-            <div>
-              <strong>IBM Watson</strong> · <strong>Siri</strong>
-              <p>Watson won Jeopardy! (2011). Siri brought voice assistants to smartphones; Alexa (2014) and Google Assistant (2016) followed.</p>
-            </div>
+          <div class="timeline-item">
+            <span class="timeline-era">2011</span>
+            <div><strong>IBM Watson · Siri</strong><p>Watson won Jeopardy! Siri brought voice assistants to phones; Alexa (2014) and Google Assistant (2016) followed.</p></div>
           </div>
-          <div class="timeline__item">
-            <span class="timeline__era">2016</span>
-            <div>
-              <strong>Messenger bots</strong>
-              <p>Businesses automated FAQs, orders, and support on platforms billions already used daily.</p>
-            </div>
+          <div class="timeline-item">
+            <span class="timeline-era">2016</span>
+            <div><strong>Messenger bots</strong><p>Businesses automated FAQs, orders, and support on platforms billions already used daily.</p></div>
           </div>
         </div>
-        <p class="footnote">Key idea: <strong>useful assistants</strong>, but narrow intents and shallow dialogue.</p>
-      </section>
+        <p class="footnote r">Key idea: <strong>useful assistants</strong>, but narrow intents and shallow dialogue.</p>
+      </div>
+    </section>
 
-      <section>
-        <h2>History of Chatbots</h2>
-        <p class="subtitle" style="margin-top: 0;">LLM era · 2020–today</p>
-        <ul>
+    <!-- 9 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">History of Chatbots · LLM era 2020–today</p>
+        <h2 class="r">Language Models Take Over</h2>
+        <ul class="r">
           <li>Modern chatbots are powered by <strong>large language models (LLMs)</strong>, not hand-written scripts</li>
           <li><strong>ChatGPT</strong> (2022) made conversational AI mainstream</li>
           <li>This course: LLM + <strong>RAG</strong> so answers stay grounded in your data</li>
         </ul>
-        <div class="callout callout--info">
+        <div class="callout callout--warning r">
           <p>Next: what LLMs are, why they were built, and how they changed chatbots.</p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>What is a Large Language Model?</h2>
-        <p>A <strong>large language model (LLM)</strong> is a deep neural network trained on massive amounts of text to predict the <strong>next token</strong> (a word piece).</p>
-        <ul>
+    <!-- 10 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">What is a Large Language Model?</h2>
+        <p class="r">A <strong>large language model (LLM)</strong> is a deep neural network trained on massive amounts of text to predict the <strong>next token</strong> (a word piece).</p>
+        <ul class="r">
           <li><strong>Tokens</strong> — text is split into sub-word units; the model picks the most likely next token, again and again</li>
           <li><strong>"Large"</strong> — billions of parameters + huge training corpora (books, web, code)</li>
-          <li>At scale, the model learns grammar, facts, reasoning patterns, and conversational style</li>
         </ul>
-        <div class="callout">
+        <div class="callout r">
           <p>Think of it as <strong>autocomplete at extraordinary scale</strong> — not a database of canned replies.</p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="compact-list">
-        <h2>Why Were LLMs Created?</h2>
-        <div class="columns">
+    <!-- 11 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Why Were LLMs Created?</h2>
+        <div class="columns r">
           <div>
             <h3>Old limits</h3>
             <ul>
@@ -178,259 +399,411 @@
           <div>
             <h3>What researchers wanted</h3>
             <ul>
-              <li><strong>One model, many tasks</strong> — not thousands of scripts</li>
+              <li><strong>One model, many tasks</strong></li>
               <li><strong>Longer context</strong> — remember earlier turns</li>
-              <li><strong>Pre-train once</strong> — adapt via prompts or fine-tuning</li>
-              <li><strong>Faster training</strong> — parallel GPUs (Transformers)</li>
+              <li><strong>Pre-train once</strong>, adapt via prompts</li>
             </ul>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="compact-list">
-        <h2>History of LLMs</h2>
-        <p class="subtitle" style="margin-top: 0;">Before the Transformer · 1990s–2016</p>
-        <ul>
+    <!-- 12 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">History of LLMs · Before the Transformer 1990s–2016</p>
+        <h2 class="r">Statistics, Then Neurons</h2>
+        <ul class="r">
           <li><strong>1990s–2000s</strong> — Statistical models (n-grams): predict next word from word counts</li>
           <li><strong>2010s</strong> — Word embeddings (Word2Vec), RNNs/LSTMs: neural but slow to train</li>
           <li><strong>2013–2016</strong> — Seq2seq + attention: models learn to "look back" at earlier words</li>
         </ul>
-        <p class="footnote">Language modeling existed for decades — the 2017 Transformer changed how we scale it.</p>
-      </section>
+        <p class="footnote r">Language modeling existed for decades — the 2017 Transformer changed how we scale it.</p>
+      </div>
+    </section>
 
-      <section class="compact-list">
-        <h2>2017 — The Transformer</h2>
-        <p class="subtitle" style="margin-top: 0;">"Attention Is All You Need" · Vaswani et al., Google</p>
-        <figure class="slide-figure">
-          <img
-            src="../assets/images/transformer-architecture.png"
-            alt="Diagram of the full Transformer encoder-decoder architecture"
-          >
-          <figcaption>Transformer architecture · CC BY 4.0 · dvgodoy · via Wikimedia Commons</figcaption>
-        </figure>
-        <ul>
-          <li><strong>Self-attention</strong> — every word can relate to every other word in parallel</li>
-          <li><strong>GPT</strong> uses decoder stacks; <strong>BERT</strong> uses encoder-only stacks</li>
-        </ul>
-      </section>
-
-      <section class="compact-list">
-        <h2>History of LLMs</h2>
-        <p class="subtitle" style="margin-top: 0;">GPT era · 2018–today</p>
-        <div class="timeline">
-          <div class="timeline__item">
-            <span class="timeline__era">2018</span>
-            <div><strong>GPT-1</strong> — pre-train on text, then fine-tune for tasks</div>
+    <!-- 13 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">2017 — The Transformer</p>
+        <h2 class="r">"Attention Is All You Need"</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;" class="r">
+          <div>
+            <p style="font-size:24px;color:var(--phosphor-dim);margin-bottom:18px;">Vaswani et al., Google</p>
+            <ul>
+              <li><strong>Self-attention</strong> — every word can relate to every other word in parallel</li>
+              <li><strong>GPT</strong> uses decoder stacks; <strong>BERT</strong> uses encoder-only stacks</li>
+            </ul>
           </div>
-          <div class="timeline__item">
-            <span class="timeline__era">2019</span>
-            <div><strong>GPT-2</strong> — coherent long-form text; responsible-release debate</div>
-          </div>
-          <div class="timeline__item">
-            <span class="timeline__era">2020</span>
-            <div><strong>GPT-3</strong> — 175B parameters; few-shot prompting demos</div>
-          </div>
-          <div class="timeline__item">
-            <span class="timeline__era">2022</span>
-            <div><strong>ChatGPT</strong> — RLHF + chat UI; ~100M users in two months</div>
-          </div>
-          <div class="timeline__item">
-            <span class="timeline__era">Today</span>
-            <div><strong>GPT-4</strong>, Claude, Gemini, LLaMA, Mixtral — <strong>Groq</strong> hosts open models (this course)</div>
-          </div>
+          <figure style="text-align:center;">
+            <img src="../assets/images/transformer-architecture.png" alt="Diagram of the full Transformer encoder-decoder architecture" style="max-height:520px;border:1px solid var(--line);">
+            <figcaption style="font-size:18px;color:var(--phosphor-dim);margin-top:12px;">CC BY 4.0 · dvgodoy · via Wikimedia Commons</figcaption>
+          </figure>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>How LLMs Power Chatbots</h2>
-        <div class="pipeline">
-          <span class="pipeline__step">User message</span>
-          <span class="pipeline__arrow">→</span>
-          <span class="pipeline__step">Tokenize</span>
-          <span class="pipeline__arrow">→</span>
-          <span class="pipeline__step">LLM generates</span>
-          <span class="pipeline__arrow">→</span>
-          <span class="pipeline__step">Reply</span>
+    <!-- 14 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">History of LLMs · GPT era 2018–today</p>
+        <h2 class="r">From GPT-1 to Today</h2>
+        <div class="timeline r">
+          <div class="timeline-item"><span class="timeline-era">2018</span><div><strong>GPT-1</strong> — pre-train on text, then fine-tune for tasks</div></div>
+          <div class="timeline-item"><span class="timeline-era">2019</span><div><strong>GPT-2</strong> — coherent long-form text; responsible-release debate</div></div>
+          <div class="timeline-item"><span class="timeline-era">2020</span><div><strong>GPT-3</strong> — 175B parameters; few-shot prompting demos</div></div>
+          <div class="timeline-item"><span class="timeline-era">2022</span><div><strong>ChatGPT</strong> — RLHF + chat UI; ~100M users in two months</div></div>
+          <div class="timeline-item"><span class="timeline-era">Today</span><div><strong>GPT-4, Claude, Gemini, LLaMA, Mixtral</strong> — Groq hosts open models (this course)</div></div>
         </div>
-        <ul>
-          <li><strong>Strengths</strong> — open-ended Q&amp;A, summarization, tone via <strong>system prompts</strong></li>
+      </div>
+    </section>
+
+    <!-- 15 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">How LLMs Power Chatbots</h2>
+        <div class="pipeline r">
+          <span class="pipeline-step">User message</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step">Tokenize</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step">LLM generates</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step">Reply</span>
+        </div>
+        <ul class="r">
+          <li><strong>Strengths</strong> — open-ended Q&amp;A, summarization, tone via system prompts</li>
           <li><strong>Risks</strong> — hallucinations, outdated knowledge, cost/latency</li>
-          <li><strong>Mitigation</strong> — RAG, guardrails, human review (Weeks 2–4)</li>
         </ul>
-        <div class="callout callout--info">
-          <p>Chatbot history gave us the <strong>interface</strong>; LLMs gave us the <strong>brain</strong>.</p>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>What Chatbots Help Us With</h2>
-        <p><strong>For businesses and customers</strong></p>
-        <ul>
+    <!-- 16 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">What Chatbots Help Us With · For businesses (1/2)</p>
+        <h2 class="r">Speed, Scale, Cost</h2>
+        <ul class="r">
           <li><strong>24/7 support</strong> — answers without waiting for business hours</li>
           <li><strong>Scale</strong> — thousands of conversations at once</li>
           <li><strong>Cost efficiency</strong> — automate FAQs; humans handle complex cases</li>
           <li><strong>Faster answers</strong> — order status, passwords, product info instantly</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 17 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">What Chatbots Help Us With · For businesses (2/2)</p>
+        <h2 class="r">Consistency &amp; Routing</h2>
+        <ul class="r">
           <li><strong>Consistency</strong> — same quality on every interaction</li>
           <li><strong>Self-service</strong> — no phone trees or long hold times</li>
           <li><strong>Routing &amp; triage</strong> — escalate the right issues to the right team</li>
         </ul>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>What Chatbots Help Us With</h2>
-        <p><strong>Across industries</strong></p>
-        <ul>
-          <li><strong>Education</strong> — tutoring, syllabus/FAQ bots, practice dialogues (e.g. simulated patients for medical students)</li>
-          <li><strong>Healthcare</strong> — scheduling, reminders, symptom triage, mental health check-ins, health literacy</li>
+    <!-- 18 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">What Chatbots Help Us With · Across industries</p>
+        <h2 class="r">Everywhere You Look</h2>
+        <ul class="r">
+          <li><strong>Education</strong> — tutoring, syllabus/FAQ bots, simulated-patient practice for medical students</li>
+          <li><strong>Healthcare</strong> — scheduling, reminders, symptom triage, mental health check-ins</li>
           <li><strong>HR</strong> — onboarding, policy FAQs, leave and benefits questions</li>
           <li><strong>Legal / compliance</strong> — document Q&amp;A and policy summaries (with disclaimers)</li>
           <li><strong>E-commerce</strong> — returns, tracking, product recommendations</li>
         </ul>
-        <div class="callout">
+        <div class="callout r">
           <p>Best systems combine <strong>AI + human review + grounded data (RAG)</strong> — especially in healthcare and legal contexts.</p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Rule-based vs LLM-powered</h2>
-        <div class="columns">
+    <!-- 19 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Rule-based vs LLM-powered</h2>
+        <div class="columns r">
           <div>
             <h3>Rule-based</h3>
-            <ul>
-              <li>Predictable, fast, cheap</li>
-              <li>Breaks on unexpected input</li>
-              <li>Hard to maintain at scale</li>
-            </ul>
+            <ul><li>Predictable, fast, cheap</li><li>Breaks on unexpected input</li><li>Hard to maintain at scale</li></ul>
           </div>
           <div>
             <h3>LLM-powered</h3>
-            <ul>
-              <li>Flexible, natural language</li>
-              <li>Can hallucinate wrong facts</li>
-              <li>Needs guardrails + retrieval (RAG)</li>
-            </ul>
+            <ul><li>Flexible, natural language</li><li>Can hallucinate wrong facts</li><li>Needs guardrails + retrieval (RAG)</li></ul>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section data-align="center">
-        <h2>High-Level Pipeline</h2>
-        <div class="pipeline">
-          <span class="pipeline__step">User</span>
-          <span class="pipeline__arrow">→</span>
-          <span class="pipeline__step">Input</span>
-          <span class="pipeline__arrow">→</span>
-          <span class="pipeline__step">Processing</span>
-          <span class="pipeline__arrow">→</span>
-          <span class="pipeline__step">Response</span>
+    <!-- 20 -->
+    <section class="slide center">
+      <div class="slide-inner">
+        <h2 class="r">High-Level Pipeline</h2>
+        <div class="pipeline r">
+          <span class="pipeline-step">User</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step">Input</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step">Processing</span><span class="pipeline-arrow">&rarr;</span>
+          <span class="pipeline-step">Response</span>
         </div>
-        <p class="subtitle">Every chatbot — simple or advanced — follows this flow</p>
-      </section>
+        <p class="subtitle r">Every chatbot — simple or advanced — follows this flow</p>
+      </div>
+    </section>
 
-      <section>
-        <h2>Inside "Processing"</h2>
-        <ul>
+    <!-- 21 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Inside "Processing"</h2>
+        <ul class="r">
           <li><strong>Understand</strong> — parse the user's message (intent, entities)</li>
           <li><strong>Decide</strong> — rules, retrieval, or LLM generation</li>
           <li><strong>Generate</strong> — craft a reply (template or model output)</li>
           <li><strong>Return</strong> — send text back to the user interface</li>
         </ul>
-        <p>Later weeks add <strong>retrieval</strong> (RAG) before the LLM step so answers stay grounded in your data.</p>
-      </section>
+        <p class="r">Later weeks add <strong>retrieval</strong> (RAG) before the LLM step so answers stay grounded in your data.</p>
+      </div>
+    </section>
 
-      <section>
-        <h2>Tools We'll Use</h2>
-        <div class="tool-grid">
-          <div class="tool-card">
-            <strong>Groq</strong>
-            <span>Fast LLM inference (LLaMA, Mixtral)</span>
-          </div>
-          <div class="tool-card">
-            <strong>LangChain</strong>
-            <span>RAG pipelines, chunking, chains</span>
-          </div>
-          <div class="tool-card">
-            <strong>Qdrant</strong>
-            <span>Vector database for semantic search</span>
-          </div>
-          <div class="tool-card">
-            <strong>Gradio</strong>
-            <span>Quick web UI for chatbot demos</span>
-          </div>
+    <!-- 22 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Tools We'll Use</h2>
+        <div class="tool-grid r">
+          <div class="tool-card"><strong>Groq</strong><span>Fast LLM inference (LLaMA, Mixtral)</span></div>
+          <div class="tool-card"><strong>LangChain</strong><span>RAG pipelines, chunking, chains</span></div>
+          <div class="tool-card"><strong>Qdrant</strong><span>Vector database for semantic search</span></div>
+          <div class="tool-card"><strong>Gradio</strong><span>Quick web UI for chatbot demos</span></div>
         </div>
-        <p class="footnote">Course materials say "Quadrant" in places — we use <strong>Qdrant</strong> (qdrant.tech), the open-source vector DB.</p>
-      </section>
+        <p class="footnote r">Course materials say "Quadrant" in places — we use <strong>Qdrant</strong> (qdrant.tech), the open-source vector DB.</p>
+      </div>
+    </section>
 
-      <section>
-        <h2>Supporting Ecosystem</h2>
-        <ul>
+    <!-- 23 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Supporting Ecosystem</h2>
+        <ul class="r">
           <li><strong>Hugging Face</strong> — models, datasets, embeddings</li>
           <li><strong>Google Colab</strong> — free browser-based Python environment</li>
           <li><strong>requests + BeautifulSoup</strong> — web scraping (Week 2)</li>
           <li><strong>PyMuPDF / pdfplumber</strong> — PDF parsing (Week 2)</li>
         </ul>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Demo: LLM Chatbots in Action</h2>
-        <p><strong>Instructor demo</strong> — show live examples:</p>
-        <ul class="checklist">
+    <!-- 24 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Demo: LLM Chatbots in Action</h2>
+        <p class="r"><strong>Instructor demo</strong> — show live examples:</p>
+        <ul class="checklist r">
           <li>ChatGPT (or similar) — general-purpose assistant</li>
           <li>Groq Playground — fast inference, developer-focused</li>
           <li>Compare: vague question vs specific question</li>
         </ul>
-        <div class="callout">
+        <div class="callout r">
           <p>Ask: <em>"What makes the reply good or bad?"</em> — relevance, tone, factual accuracy.</p>
         </div>
-      </section>
+      </div>
+      <!-- notes: Ask students to compare a vague vs specific prompt live. -->
+    </section>
 
-      <section data-align="center">
-        <h2>Mini-Activity</h2>
-        <div class="activity-box">
+    <!-- 25 -->
+    <section class="slide center">
+      <div class="slide-inner">
+        <h2 class="r">Mini-Activity</h2>
+        <div class="activity-box r">
           <p>Brainstorm: Where are chatbots used in the real world?</p>
           <p class="subtitle">Work in pairs · 5 minutes · Share one idea per team</p>
         </div>
-        <p style="margin-top: 1.5rem; text-align: center;">Education · HR · Healthcare · Customer support · Legal · News · Campus services</p>
-      </section>
+        <p class="r" style="margin-top:32px;">Education · HR · Healthcare · Customer support · Legal · News · Campus services</p>
+      </div>
+    </section>
 
-      <section>
-        <h2>Example Project Ideas</h2>
-        <ul>
+    <!-- 26 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Example Project Ideas</h2>
+        <ul class="r">
           <li><strong>History Chatbot</strong> — Wikipedia or history PDF</li>
           <li><strong>College Chatbot</strong> — syllabus, grading, campus FAQs</li>
           <li><strong>Legal / Policy Bot</strong> — contracts or HR documents</li>
           <li><strong>News Bot</strong> — scraped articles, daily summaries</li>
         </ul>
-        <p>You'll pick a dataset by Week 2 and ship a full RAG bot by Week 4.</p>
-      </section>
+        <p class="r">You'll pick a dataset by Week 2 and ship a full RAG bot by Week 4.</p>
+      </div>
+    </section>
 
-      <section>
-        <h2>Week 1 Roadmap</h2>
-        <ul>
+    <!-- 27 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Week 1 Roadmap</h2>
+        <ul class="r">
           <li><strong>Class 1 (today)</strong> — Foundations &amp; concepts</li>
           <li><strong>Class 2</strong> — Groq API + Hello Chatbot</li>
           <li><strong>Class 3</strong> — Lab: personalized personality bot</li>
         </ul>
-      </section>
+      </div>
+    </section>
 
-      <section data-align="center">
-        <h2>Recap</h2>
-        <ul class="checklist" style="display: inline-block; text-align: left;">
-          <li>60+ years: ELIZA → SmarterChild → Siri → ChatGPT → RAG</li>
+    <!-- 28 -->
+    <section class="slide center">
+      <div class="slide-inner">
+        <h2 class="r">Recap</h2>
+        <ul class="checklist r" style="display:inline-block;text-align:left;">
+          <li>60+ years: ELIZA &rarr; SmarterChild &rarr; Siri &rarr; ChatGPT &rarr; RAG</li>
           <li>LLMs predict language at scale; Transformers (2017) + GPT made modern chatbots possible</li>
           <li>Chatbots save time, scale support, and serve many industries</li>
-          <li>Pipeline: User → Input → Processing → Response</li>
+          <li>Pipeline: User &rarr; Input &rarr; Processing &rarr; Response</li>
           <li>Tools: Groq, LangChain, Qdrant, Gradio</li>
         </ul>
-        <p class="subtitle" style="margin-top: 1.5rem;">Next: Class 2 — Calling the Groq API in Python</p>
-      </section>
+        <p class="subtitle r" style="margin-top:24px;">Next: Class 2 — Calling the Groq API in Python</p>
+      </div>
+    </section>
 
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="deck-chrome-bottom">
+      <span class="counter" id="slideCounter">01 / 28</span>
+      <span class="hint">Nav <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>Space</kbd></span>
     </div>
-  </div>
+  </main>
+  <div class="crt-overlay"></div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
-  <script src="../assets/js/site.js"></script>
+<script>
+/* ============================================================
+   SLIDE PRESENTATION CONTROLLER — shared across all decks
+   ============================================================ */
+class SlidePresentation{
+  constructor(){
+    this.slides=document.querySelectorAll('.slide');
+    this.current=0;
+    this.stage=document.getElementById('deckStage');
+    this.counter=document.getElementById('slideCounter');
+    this.fill=document.getElementById('progressFill');
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.showSlide(0);
+  }
+  setupStageScale(){
+    const scale=()=>{
+      const f=Math.min(window.innerWidth/1920, window.innerHeight/1080);
+      const x=(window.innerWidth-1920*f)/2;
+      const y=(window.innerHeight-1080*f)/2;
+      this.stage.style.transform=`translate(${x}px, ${y}px) scale(${f})`;
+    };
+    scale();
+    window.addEventListener('resize', scale);
+  }
+  setupKeyboardNav(){
+    document.addEventListener('keydown', (e)=>{
+      if(e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+      if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ this.next(); e.preventDefault(); }
+      if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ this.prev(); e.preventDefault(); }
+    });
+  }
+  setupTouchNav(){
+    let sx=0;
+    document.addEventListener('touchstart', (e)=>{ sx=e.touches[0].clientX; });
+    document.addEventListener('touchend', (e)=>{
+      const dx=e.changedTouches[0].clientX-sx;
+      if(dx<-50) this.next();
+      if(dx>50) this.prev();
+    });
+    document.addEventListener('wheel', (e)=>{
+      if(Math.abs(e.deltaY)<30) return;
+      if(e.deltaY>0) this.next(); else this.prev();
+    }, {passive:true});
+  }
+  showSlide(i){
+    this.current=Math.max(0, Math.min(i, this.slides.length-1));
+    this.slides.forEach((s,idx)=>{
+      s.classList.toggle('active', idx===this.current);
+      s.classList.toggle('visible', idx===this.current);
+    });
+    if(this.counter) this.counter.textContent = String(this.current+1).padStart(2,'0')+' / '+String(this.slides.length).padStart(2,'0');
+    if(this.fill) this.fill.style.width = ((this.current+1)/this.slides.length*100)+'%';
+  }
+  next(){ this.showSlide(this.current+1); }
+  prev(){ this.showSlide(this.current-1); }
+}
+
+/* Lightweight python/bash keyword+string+comment highlighter.
+   Single-pass regex+callback avoids re-matching injected HTML. */
+function highlightCode(){
+  document.querySelectorAll('pre code').forEach((block)=>{
+    const raw=block.textContent;
+    const esc=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const kws='def|return|import|from|if|elif|else|for|while|in|True|False|None|class|try|except|as|break|continue|and|or|not|with|lambda';
+    const pattern=new RegExp('(#.*$)|("""[\\s\\S]*?"""|\'\'\'[\\s\\S]*?\'\'\'|"[^"\\n]*"|\'[^\'\\n]*\')|\\b('+kws+')\\b','gm');
+    block.innerHTML = esc.replace(pattern, (m, cm, str, kw)=>{
+      if(cm) return '<span class="cm">'+cm+'</span>';
+      if(str) return '<span class="str">'+str+'</span>';
+      if(kw) return '<span class="kw">'+kw+'</span>';
+      return m;
+    });
+  });
+}
+
+/* ============================================================
+   INLINE EDITING — hover top-left corner or press E
+   ============================================================ */
+class InlineEditor{
+  constructor(storageKey){
+    this.storageKey=storageKey;
+    this.isActive=false;
+    this.restore();
+  }
+  restore(){
+    const saved=localStorage.getItem(this.storageKey);
+    if(!saved) return;
+    try{
+      const data=JSON.parse(saved);
+      document.querySelectorAll('.slide').forEach((s,i)=>{ if(data[i]!==undefined) s.innerHTML=data[i]; });
+    }catch(e){}
+  }
+  save(){
+    const data=Array.from(document.querySelectorAll('.slide')).map(s=>s.innerHTML);
+    localStorage.setItem(this.storageKey, JSON.stringify(data));
+  }
+  toggleEditMode(){
+    this.isActive=!this.isActive;
+    document.querySelectorAll('.slide h1,.slide h2,.slide h3,.slide p,.slide li,.slide span').forEach(el=>{
+      el.setAttribute('contenteditable', this.isActive ? 'true':'false');
+    });
+    document.getElementById('editToggle').classList.toggle('active', this.isActive);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  highlightCode();
+  window.deck = new SlidePresentation();
+
+  const editor = new InlineEditor('deck-edits::week1-class1');
+  const hotzone=document.querySelector('.edit-hotzone');
+  const editToggle=document.getElementById('editToggle');
+  let hideTimeout=null;
+  if(hotzone && editToggle){
+    editToggle.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('mouseenter', ()=>{clearTimeout(hideTimeout); editToggle.classList.add('show');});
+    hotzone.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+    editToggle.addEventListener('mouseenter', ()=>clearTimeout(hideTimeout));
+    editToggle.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+  }
+  document.addEventListener('keydown', (e)=>{
+    if((e.key==='e'||e.key==='E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable')==='true')){ editor.toggleEditMode(); }
+    if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); editor.save(); }
+  });
+});
+</script>
+
+<div class="edit-hotzone" style="position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)" style="position:fixed;top:12px;left:12px;z-index:10001;opacity:0;pointer-events:none;transition:opacity 0.3s ease;background:var(--bg-panel);border:1px solid var(--phosphor);color:var(--phosphor);font-size:18px;padding:8px 12px;">&#9998;</button>
+<style>
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+</style>
 </body>
 </html>

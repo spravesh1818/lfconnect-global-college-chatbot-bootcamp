@@ -1,63 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Chatbots with LLMs &amp; RAG — Bootcamp</title>
-  <link rel="stylesheet" href="assets/css/site.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building AI Chatbots with LLMs and RAG — Bootcamp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#f5f2ea;
+  --cream-deep:#ece6d8;
+  --ink:#211d18;
+  --ink-soft:#5a5347;
+  --crimson:#b3311f;
+  --crimson-deep:#8f2418;
+  --line:#ddd4c0;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--cream);color:var(--ink);font-family:'Work Sans',sans-serif;line-height:1.5;}
+a{color:inherit;text-decoration:none;}
+
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px;}
+
+/* === masthead === */
+.masthead{
+  padding:88px 0 64px;
+  border-bottom:2px solid var(--ink);
+  position:relative;
+}
+.masthead::before{
+  content:"";
+  position:absolute;
+  top:0;left:0;right:0;
+  height:6px;
+  background:repeating-linear-gradient(90deg, var(--crimson) 0 24px, transparent 24px 48px);
+}
+.kicker{
+  font-family:'Work Sans',sans-serif;
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--crimson);
+  margin-top:24px;
+}
+h1.title{
+  font-family:'Fraunces', serif;
+  font-weight:600;
+  font-size:clamp(40px, 6vw, 64px);
+  line-height:1.08;
+  margin-top:18px;
+  max-width:820px;
+}
+h1.title em{
+  font-style:italic;
+  font-weight:400;
+  color:var(--crimson);
+}
+.dek{
+  margin-top:24px;
+  font-size:19px;
+  color:var(--ink-soft);
+  max-width:620px;
+}
+
+/* === section label === */
+.section-label{
+  display:flex;align-items:center;gap:16px;
+  margin:72px 0 32px;
+  font-size:13px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.section-label::after{content:"";flex:1;height:1px;background:var(--line);}
+
+/* === week grid === */
+.week-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:28px;
+}
+@media (max-width:760px){.week-grid{grid-template-columns:1fr;}}
+
+.week-card{
+  border:2px solid var(--ink);
+  padding:36px;
+  position:relative;
+  transition:transform 0.2s ease, box-shadow 0.2s ease;
+  background:var(--cream);
+}
+a.week-card:hover{
+  transform:translateY(-4px);
+  box-shadow:8px 8px 0 var(--crimson);
+}
+.week-card .num{
+  font-family:'Fraunces', serif;
+  font-size:52px;
+  font-weight:700;
+  color:var(--line);
+  position:absolute;
+  top:20px;right:28px;
+  line-height:1;
+}
+.week-card .status{
+  display:inline-block;
+  font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--crimson);
+  border:1px solid var(--crimson);
+  padding:4px 12px;
+  margin-bottom:20px;
+}
+.week-card .status.muted{color:var(--ink-soft);border-color:var(--line);}
+.week-card h2{
+  font-family:'Fraunces', serif;
+  font-size:28px;
+  font-weight:600;
+  margin-bottom:12px;
+}
+.week-card p{
+  color:var(--ink-soft);
+  font-size:15.5px;
+  max-width:480px;
+}
+.week-card .meta{
+  margin-top:20px;
+  font-size:13px;
+  font-weight:500;
+  color:var(--ink-soft);
+  border-top:1px solid var(--line);
+  padding-top:16px;
+}
+.week-card.disabled{
+  border-style:dashed;
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
+/* === final deliverable === */
+.final-banner{
+  margin-top:72px;
+  padding:40px;
+  background:var(--ink);
+  color:var(--cream);
+}
+.final-banner h2{
+  font-family:'Fraunces', serif;
+  font-size:24px;
+  font-weight:600;
+  color:var(--cream);
+  margin-bottom:12px;
+}
+.final-banner h2::before{content:"◆ ";color:var(--crimson);}
+.final-banner p{color:#cfc8b8;max-width:700px;font-size:15.5px;}
+
+/* === footer === */
+footer{
+  margin-top:64px;
+  padding:32px 0 88px;
+  border-top:1px solid var(--line);
+  font-size:14px;
+  color:var(--ink-soft);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+footer a{color:var(--crimson);}
+footer a:hover{text-decoration:underline;}
+</style>
 </head>
-<body data-page="home">
-  <div class="site-shell">
-    <main class="site-main">
-      <header class="site-header">
-        <h1>Building AI Chatbots with LLMs and RAG</h1>
-        <p>From basics to hands-on projects — a four-week course covering chatbot foundations, prompt engineering, embeddings, and retrieval-augmented generation.</p>
-      </header>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <p class="kicker">LF Connect · Global Chatbot Bootcamp</p>
+    <h1 class="title">Building AI Chatbots<br>with <em>LLMs</em> and RAG</h1>
+    <p class="dek">From basics to hands-on projects — a four-week course covering chatbot foundations, prompt engineering, embeddings, and retrieval-augmented generation.</p>
+  </header>
 
-      <section aria-label="Course weeks">
-        <div class="card-grid">
-          <a class="card" href="week-1/index.html">
-            <span class="card__badge">Available</span>
-            <h2>Week 1</h2>
-            <p>Chatbot Foundations &amp; LLM APIs — evolution, pipelines, Groq API, and your first personalized chatbot.</p>
-            <span class="card__meta">3 classes · Slides ready</span>
-            <span class="btn btn--primary">Start Week 1</span>
-          </a>
+  <p class="section-label">Course weeks</p>
+  <div class="week-grid">
+    <a class="week-card" href="week-1/index.html">
+      <span class="num">01</span>
+      <span class="status">Available</span>
+      <h2>Chatbot Foundations &amp; LLM APIs</h2>
+      <p>Evolution from rule-based to LLM-powered bots, the high-level pipeline, tools overview, and your first Groq-powered chatbot.</p>
+      <p class="meta">3 classes · Slides ready</p>
+    </a>
 
-          <a class="card" href="week-2/index.html">
-            <span class="card__badge">Available</span>
-            <h2>Week 2</h2>
-            <p>Prompt Engineering, LangChain &amp; LangGraph — zero-shot to CoT, LangGraph agents, web scraping, PDF chunking.</p>
-            <span class="card__meta">3 classes · Slides ready</span>
-            <span class="btn btn--primary">Start Week 2</span>
-          </a>
+    <a class="week-card" href="week-2/index.html">
+      <span class="num">02</span>
+      <span class="status">Available</span>
+      <h2>Prompt Engineering, LangChain &amp; LangGraph</h2>
+      <p>Zero-shot to chain-of-thought prompting, a single LangGraph agent, web scraping, and PDF chunking pipelines.</p>
+      <p class="meta">4 classes · Slides ready</p>
+    </a>
 
-          <div class="card card--disabled">
-            <span class="card__badge card__badge--muted">Coming soon</span>
-            <h2>Week 3</h2>
-            <p>Embeddings + Vector Databases — FAISS, Qdrant, and retrieval-enabled chatbots.</p>
-            <span class="card__meta">3 classes</span>
-          </div>
+    <div class="week-card disabled">
+      <span class="num">03</span>
+      <span class="status muted">Coming soon</span>
+      <h2>Embeddings + Vector Databases</h2>
+      <p>FAISS, Qdrant, and retrieval-enabled chatbots.</p>
+      <p class="meta">3 classes</p>
+    </div>
 
-          <div class="card card--disabled">
-            <span class="card__badge card__badge--muted">Coming soon</span>
-            <h2>Week 4</h2>
-            <p>RAG + Hybrid RAG + Gradio Showcase — build and present your final RAG chatbot.</p>
-            <span class="card__meta">3 classes · Final deliverable</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="lab-banner" aria-label="Final deliverable">
-        <h2>Final Deliverable</h2>
-        <p>By the end of the course, each student presents a working Gradio-based RAG chatbot that uses Groq for responses, retrieves knowledge from a PDF or website, supports prompt engineering for style control, and displays retrieved sources.</p>
-      </section>
-
-      <footer class="site-footer">
-        <p>LF Connect · Global Chatbot Bootcamp · <a href="https://groq.com" target="_blank" rel="noopener">Groq</a> · <a href="https://langchain.com" target="_blank" rel="noopener">LangChain</a> · <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a></p>
-      </footer>
-    </main>
+    <div class="week-card disabled">
+      <span class="num">04</span>
+      <span class="status muted">Coming soon</span>
+      <h2>RAG + Hybrid RAG + Gradio Showcase</h2>
+      <p>Build and present your final RAG chatbot.</p>
+      <p class="meta">3 classes · Final deliverable</p>
+    </div>
   </div>
-  <script src="assets/js/site.js"></script>
+
+  <div class="final-banner">
+    <h2>Final Deliverable</h2>
+    <p>By the end of the course, each student presents a working Gradio-based RAG chatbot that uses Groq for responses, retrieves knowledge from a PDF or website, supports prompt engineering for style control, and displays retrieved sources.</p>
+  </div>
+
+  <footer>
+    <span>LF Connect · Global Chatbot Bootcamp</span>
+    <span><a href="https://groq.com" target="_blank" rel="noopener">Groq</a> · <a href="https://langchain.com" target="_blank" rel="noopener">LangChain</a> · <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a></span>
+  </footer>
+</div>
 </body>
 </html>

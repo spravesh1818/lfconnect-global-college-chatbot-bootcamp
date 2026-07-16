@@ -12,7 +12,7 @@ python3 -m http.server 8000
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
-> Use a local server (not `file://`) so Reveal.js and assets load correctly.
+> Use a local server (not `file://`) so fonts and assets load correctly.
 
 ## GitHub Pages
 
@@ -29,33 +29,38 @@ The `.nojekyll` file ensures GitHub Pages serves all paths without Jekyll proces
 ## Structure
 
 ```
-index.html              # Course home
+index.html              # Course home (editorial/paper theme)
 week-1/
-  index.html            # Week 1 hub
-  class-1.html          # Reveal.js slides
-  class-2.html
+  index.html            # Week 1 hub (retro terminal theme)
+  class-1.html          # Self-contained fixed-stage slide decks
+  class-2.html          # (no build step, no shared JS/CSS — each file is standalone)
   class-3.html
   notebooks/
     hello_chatbot_groq.ipynb   # Class 2 — Groq API + Hello Chatbot (Google Colab)
 week-2/
-  index.html            # Week 2 hub
+  index.html            # Week 2 hub (Electric Studio theme)
   class-1.html          # Prompt engineering slides
-  class-2.html          # LangChain + LangGraph slides
-  class-3.html          # Scraping + PDF lab slides
+  class-2.html          # LangChain chains + tool agent slides
+  class-3.html          # Building a LangGraph agent slides
+  class-4.html          # Scraping + PDF + RAG lab slides
   notebooks/
-    week2_agent_and_data.ipynb # Class 2–3 — LangChain, LangGraph, scraping, chunking
+    week2_langchain_fundamentals.ipynb  # Class 2 — chains, tools, standalone tool agent
+    week2_langgraph_agent.ipynb         # Class 3 — LangGraph agent (chat/calculate/research/docs)
+    week2_data_collection_rag.ipynb     # Class 4 — scraping, PDF chunking, wiring data into the agent
   data/
-    sample.pdf          # Sample photosynthesis PDF for in-class parsing
+    sample.pdf          # Sample PDF for in-class parsing
 assets/
-  css/                  # Design tokens + hub + slide themes
-  js/site.js            # Shared navigation
+  images/               # Logos, QR codes, diagrams
 docs/
-  design.md             # Spotify-inspired design system reference
+  design.md             # Design system reference
 ```
 
 ## Design
 
-Visual styling follows [docs/design.md](docs/design.md): dark surfaces (`#121212`–`#1f1f1f`), Spotify Green (`#1ed760`) accents, pill buttons, and compact typography.
+Every page is a self-contained HTML file — no shared CSS/JS, no build step, no external slide
+framework. Each week has its own visual identity: the course home uses a warm editorial/paper
+theme, Week 1 uses a retro phosphor-green terminal theme, and Week 2 uses a white/black "Electric
+Studio" split-panel theme. See [docs/design.md](docs/design.md) for details.
 
 ## Colab notebooks
 
@@ -79,25 +84,28 @@ Students need a free API key from [console.groq.com](https://console.groq.com) b
 
 ## Week 2 content
 
-| Class | Topic |
-|-------|--------|
-| 1 | Prompt engineering — zero-shot, few-shot, CoT, zero-shot CoT, CO-STAR/CRISP, exam-prep example |
-| 2 | LangChain `ChatPromptTemplate`, roles deep dive, LangGraph agent — **notebook:** `week-2/notebooks/week2_agent_and_data.ipynb` (Sections 1–14) |
-| 3 | Web scraping (quotes.toscrape.com), PDF parsing + chunking, lab deliverable (Sections 15–25) |
+| Class | Topic | Notebook |
+|-------|--------|----------|
+| 1 | Prompt engineering — zero-shot, few-shot, CoT, zero-shot CoT, CO-STAR/CRISP, exam-prep example | — |
+| 2 | LangChain `ChatPromptTemplate`, LCEL, sequential chains, standalone tool-calling agent | `week2_langchain_fundamentals.ipynb` |
+| 3 | Building a LangGraph agent from scratch: shared state, classify router, `calculate` and `research` tool nodes, a context-aware `docs` node. Homework: design a 5th intent of your own. | `week2_langgraph_agent.ipynb` |
+| 4 | Web scraping (quotes.toscrape.com), PDF parsing + chunking, wiring real data into the Class 3 agent's `docs` node, lab deliverable | `week2_data_collection_rag.ipynb` |
 
-**Week 2 lab deliverable:** LangGraph agent (classify → chat / study) + chunked dataset (scraped JSON + PDF chunks) ready for Week 3 embeddings.
+**Week 2 lab deliverable:** LangGraph agent (classify → chat / calculate / research / docs) + chunked dataset (scraped JSON + PDF chunks) wired into the `docs` node, ready for Week 3 embeddings.
 
-**Open Week 2 notebook in Colab:**
+**Open Week 2 notebooks in Colab:**
 
 ```
-https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-2/notebooks/week2_agent_and_data.ipynb
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-2/notebooks/week2_langchain_fundamentals.ipynb
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-2/notebooks/week2_langgraph_agent.ipynb
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-2/notebooks/week2_data_collection_rag.ipynb
 ```
 
-**Dependencies (installed in notebook):** `langchain`, `langchain-core`, `langchain-groq`, `langgraph`, `requests`, `beautifulsoup4`, `pymupdf`
+**Dependencies (installed in notebooks):** `langchain`, `langchain-core`, `langchain-groq`, `langgraph`, `langchain-community`, `duckduckgo-search`, `requests`, `beautifulsoup4`, `pymupdf`
 
-**PDF export (Week 2):** `./scripts/export-week2-notebook-pdf.sh`
+**PDF export (Week 2):** `./scripts/export-week2-notebook-pdf.sh` (exports the Class 3 and Class 4 notebooks)
 
-**QR codes:** add `week2-class-1.png`, `week2-class-2.png`, `week2-class-3.png` under `assets/images/qr-codes/` — see that folder's README.
+**QR codes:** add `week2-class-1.png`, `week2-class-2.png`, `week2-class-3.png`, `week2-class-4.png` under `assets/images/qr-codes/` — see that folder's README.
 
 ## Week 1 content
 

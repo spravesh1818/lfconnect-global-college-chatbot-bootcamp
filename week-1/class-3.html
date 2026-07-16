@@ -1,85 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Class 3 — Lab &amp; Student Project</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
-  <link rel="stylesheet" href="../assets/css/site.css">
-  <link rel="stylesheet" href="../assets/css/reveal-theme.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class 3 — Lab &amp; Student Project</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TERMINAL DECK ENGINE — Week 1 shared theme
+   Phosphor-green CRT terminal aesthetic. All Week 1 class decks
+   (class-1/2/3) reuse this exact block.
+   ============================================================ */
+:root{
+  --phosphor:#3dff6e;
+  --phosphor-dim:#1c8a3d;
+  --amber:#ffb454;
+  --err:#ff6b6b;
+  --bg:#060a06;
+  --bg-panel:#0b120b;
+  --line:rgba(61,255,110,0.22);
+  --ink:#bfe9cc;
+  --white:#eafff1;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* === FIXED 16:9 STAGE (viewport-base.css) === */
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--slide-bg,#fff);}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;background:var(--slide-bg,#fff);}
+.slide.active,.slide.visible{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+.deck-controls{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;}
+@media print{
+  html,body{width:1920px;height:auto;overflow:visible;background:#fff;}
+  .deck-viewport{position:static;overflow:visible;background:#fff;}
+  .deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none;}
+  .slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always;}
+  .slide:last-child{break-after:auto;page-break-after:auto;}
+  .deck-controls{display:none!important;}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important;}}
+/* === END viewport-base.css === */
+
+body{font-family:'Space Mono',monospace;}
+.deck-stage{
+  background:
+    linear-gradient(var(--line) 1px, transparent 1px) 0 0/100% 44px,
+    var(--bg);
+}
+.slide{background:transparent;}
+
+.crt-overlay{
+  position:absolute;inset:0;pointer-events:none;z-index:50;
+  background:
+    repeating-linear-gradient(180deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0.10) 1px, rgba(0,0,0,0) 3px),
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.45) 100%);
+  mix-blend-mode:multiply;
+}
+
+.deck-chrome-top{
+  position:absolute;top:0;left:0;right:0;height:84px;z-index:40;
+  display:flex;align-items:center;gap:14px;
+  padding:0 64px;
+  border-bottom:1px solid var(--line);
+  background:rgba(6,10,6,0.75);
+  font-size:20px;color:var(--phosphor-dim);letter-spacing:2px;
+}
+.deck-chrome-top .dot{width:13px;height:13px;border-radius:50%;background:var(--phosphor-dim);}
+.deck-chrome-top .path{color:var(--phosphor);}
+.deck-chrome-top .hub-link{color:var(--phosphor);text-decoration:none;border:1px solid var(--line);padding:3px 12px;font-size:16px;letter-spacing:1px;transition:background 0.15s ease, border-color 0.15s ease;}
+.deck-chrome-top .hub-link:hover{background:rgba(61,255,110,0.08);border-color:var(--phosphor-dim);}
+.deck-chrome-top .weekmeta{margin-left:auto;text-transform:uppercase;font-size:17px;}
+
+.deck-chrome-bottom{
+  position:absolute;bottom:0;left:0;right:0;height:64px;z-index:40;
+  display:flex;align-items:center;
+  padding:0 64px;
+  font-size:18px;color:var(--phosphor-dim);
+}
+.deck-chrome-bottom .counter{font-weight:700;color:var(--phosphor);}
+.deck-chrome-bottom .hint{margin-left:auto;}
+.deck-chrome-bottom .hint kbd{
+  display:inline-block;border:1px solid var(--line);border-radius:4px;
+  padding:2px 8px;margin:0 2px;color:var(--ink);
+}
+.progress-track{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(61,255,110,0.08);z-index:41;}
+.progress-fill{height:100%;background:var(--phosphor);box-shadow:0 0 8px var(--phosphor);transition:width 0.3s ease;}
+
+.slide-inner{
+  position:absolute;
+  top:140px;left:150px;right:150px;bottom:120px;
+  display:flex;flex-direction:column;
+}
+.slide.center .slide-inner{align-items:center;justify-content:center;text-align:center;}
+
+.eyebrow{
+  font-size:22px;font-weight:700;letter-spacing:4px;text-transform:uppercase;
+  color:var(--amber);margin-bottom:18px;
+}
+h2{
+  font-family:'VT323', monospace;
+  font-size:68px;font-weight:400;color:var(--phosphor);
+  text-shadow:0 0 10px rgba(61,255,110,0.35);
+  letter-spacing:0.5px;line-height:1.05;margin-bottom:32px;
+}
+.slide p{font-size:28px;color:var(--ink);line-height:1.55;}
+.slide strong{color:var(--white);font-weight:700;}
+.slide a{color:var(--phosphor);text-decoration:underline;}
+.subtitle{font-size:26px;color:var(--phosphor-dim);margin-top:10px;}
+.footnote{font-size:20px;color:var(--phosphor-dim);margin-top:24px;}
+
+ul, ol{margin-left:40px;}
+.slide li{font-size:28px;color:var(--ink);line-height:1.5;margin-bottom:14px;}
+ul.checklist{list-style:none;margin-left:0;}
+ul.checklist li{padding-left:36px;position:relative;}
+ul.checklist li::before{content:"> ";color:var(--phosphor);font-weight:700;position:absolute;left:0;}
+
+pre{
+  background:var(--bg-panel);border:1px solid var(--line);border-left:4px solid var(--phosphor);
+  padding:32px 36px;margin-top:20px;overflow:hidden;
+}
+pre code{
+  font-family:'Space Mono',monospace;font-size:23px;line-height:1.5;color:var(--ink);white-space:pre;
+}
+.kw{color:var(--amber);font-weight:700;}
+.str{color:var(--phosphor);}
+.cm{color:var(--phosphor-dim);font-style:italic;}
+
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:64px;}
+.columns h3{font-family:'VT323',monospace;font-size:34px;color:var(--amber);margin-bottom:14px;letter-spacing:0.5px;}
+
+.callout{
+  border-left:4px solid var(--phosphor);background:rgba(61,255,110,0.05);
+  padding:26px 32px;margin-top:24px;font-size:26px;color:var(--ink);
+}
+.callout--warning{border-left-color:var(--amber);background:rgba(255,180,84,0.06);}
+.callout--error{border-left-color:var(--err);background:rgba(255,107,107,0.06);}
+
+table{width:100%;border-collapse:collapse;margin-top:20px;font-size:24px;}
+th{background:var(--bg-panel);color:var(--phosphor);text-align:left;padding:16px 20px;font-weight:700;}
+td{border-top:1px solid var(--line);padding:16px 20px;color:var(--ink);}
+
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;}
+.tool-card{border:1px solid var(--line);background:rgba(61,255,110,0.03);padding:28px 30px;}
+.tool-card strong{display:block;color:var(--phosphor);font-size:28px;margin-bottom:8px;}
+.tool-card span{font-size:22px;color:var(--phosphor-dim);}
+
+.activity-box{
+  border:2px dashed var(--phosphor-dim);padding:48px 56px;text-align:center;margin-top:8px;
+}
+.activity-box p{font-size:32px;color:var(--white);font-weight:700;}
+.activity-box .subtitle{margin-top:12px;font-size:24px;}
+
+.title-slide .slide-inner{justify-content:center;}
+.title-slide h1{
+  font-family:'VT323', monospace;font-size:150px;line-height:1.0;color:var(--phosphor);
+  text-shadow:0 0 12px rgba(61,255,110,0.5), 0 0 50px rgba(61,255,110,0.2);
+}
+.title-slide .subtitle{font-size:32px;color:var(--amber);margin-top:24px;}
+.prompt-line{color:var(--phosphor-dim);font-size:26px;margin-bottom:20px;}
+
+.slide .r{opacity:0;transform:translateY(20px);transition:opacity 0.5s ease-out, transform 0.5s ease-out;}
+.slide.active .r{opacity:1;transform:translateY(0);}
+.slide .r:nth-child(1){transition-delay:0.05s;}
+.slide .r:nth-child(2){transition-delay:0.15s;}
+.slide .r:nth-child(3){transition-delay:0.25s;}
+.slide .r:nth-child(4){transition-delay:0.35s;}
+.slide .r:nth-child(5){transition-delay:0.45s;}
+</style>
 </head>
-<body class="deck-page" data-page="class-3">
-  <div class="reveal">
-    <div class="slides">
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
 
-      <section data-align="center">
-        <h1>Lab &amp; Student Project</h1>
-        <p class="subtitle">Week 1 · Class 3 · Personalized Chatbot</p>
-      </section>
+    <div class="deck-chrome-top">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <a class="hub-link" href="index.html">&larr; Hub</a>
+      <span class="path">week-1/class-3.sh</span>
+      <span class="weekmeta">Week 1 · Class 3</span>
+    </div>
 
-      <section>
-        <h2>Lab Deliverable</h2>
-        <div class="callout">
-          <p><strong>Personalized Chatbot using Groq API</strong></p>
-        </div>
-        <ul>
+    <!-- 1 -->
+    <section class="slide active center title-slide">
+      <div class="slide-inner">
+        <p class="prompt-line r">$ ./run --class=3 --topic="lab-and-project"</p>
+        <h1 class="r">Lab &amp;<br>Student Project</h1>
+        <p class="subtitle r">Week 1 · Class 3 · Personalized Chatbot</p>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Lab Deliverable</h2>
+        <div class="callout r"><p><strong>Personalized Chatbot using Groq API</strong></p></div>
+        <ul class="r">
           <li>Extends Hello Chatbot from Class 2</li>
           <li>Uses a <strong>system prompt</strong> to define personality</li>
           <li>Demo-ready for a short in-class or async presentation</li>
         </ul>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>What is a System Prompt?</h2>
-        <p>The <strong>system</strong> message sets behavior before the user speaks — tone, role, constraints, and format.</p>
-        <ul>
+    <!-- 3 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">What is a System Prompt?</h2>
+        <p class="r">The <strong>system</strong> message sets behavior before the user speaks — tone, role, constraints, and format.</p>
+        <ul class="r">
           <li>Not shown to end users (in most UIs)</li>
           <li>Steers every reply consistently</li>
           <li>Week 2 goes deeper on prompt engineering</li>
         </ul>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Personality Examples</h2>
-        <div class="tool-grid">
-          <div class="tool-card">
-            <strong>Teacher Bot</strong>
-            <span>Patient, step-by-step, checks understanding</span>
-          </div>
-          <div class="tool-card">
-            <strong>Joke Bot</strong>
-            <span>Witty, pun-heavy, keeps answers short</span>
-          </div>
-          <div class="tool-card">
-            <strong>Travel Guide</strong>
-            <span>Enthusiastic, practical tips, local culture</span>
-          </div>
-          <div class="tool-card">
-            <strong>Your Choice</strong>
-            <span>HR assistant, history expert, campus bot…</span>
-          </div>
+    <!-- 4 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Personality Examples</h2>
+        <div class="tool-grid r">
+          <div class="tool-card"><strong>Teacher Bot</strong><span>Patient, step-by-step, checks understanding</span></div>
+          <div class="tool-card"><strong>Joke Bot</strong><span>Witty, pun-heavy, keeps answers short</span></div>
+          <div class="tool-card"><strong>Travel Guide</strong><span>Enthusiastic, practical tips, local culture</span></div>
+          <div class="tool-card"><strong>Your Choice</strong><span>HR assistant, history expert, campus bot…</span></div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>System Prompt Samples</h2>
-        <pre><code class="language-python">TEACHER = """You are a friendly programming tutor.
+    <!-- 5 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">System Prompt Samples</h2>
+        <pre class="r"><code class="language-python">TEACHER = """You are a friendly programming tutor.
 Explain concepts in simple steps. Ask a follow-up
 question after each answer to check understanding."""
 
 JOKE_BOT = """You are a comedian chatbot. Add light humor
 and puns when appropriate. Keep responses under 3 sentences
-unless asked for more."""
+unless asked for more."""</code></pre>
+      </div>
+    </section>
 
-TRAVEL = """You are an expert travel guide. Give practical
-tips on destinations, food, and culture. Be enthusiastic
-but factual. Say when you are unsure."""</code></pre>
-      </section>
-
-      <section>
-        <h2>Personalized Chatbot — Code</h2>
-        <pre><code class="language-python">from groq import Groq
+    <!-- 6 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Personalized Chatbot — Code</h2>
+        <pre class="r"><code class="language-python">from groq import Groq
 import os
 
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
@@ -98,14 +268,16 @@ def chat(user_message: str) -> str:
         temperature=0.7,
     )
     return response.choices[0].message.content</code></pre>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Multi-Turn Conversations (Stretch)</h2>
-        <p>Pass prior <code>assistant</code> messages so the bot remembers context:</p>
-        <pre><code class="language-python">history = [
-    {"role": "system", "content": SYSTEM_PROMPT},
-]
+    <!-- 7 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <p class="eyebrow r">Stretch goal</p>
+        <h2 class="r">Multi-Turn Conversations</h2>
+        <p class="r" style="margin-bottom:12px;">Pass prior <code>assistant</code> messages so the bot remembers context:</p>
+        <pre class="r"><code class="language-python">history = [{"role": "system", "content": SYSTEM_PROMPT}]
 
 def chat_turn(user_message: str) -> str:
     history.append({"role": "user", "content": user_message})
@@ -115,25 +287,29 @@ def chat_turn(user_message: str) -> str:
     reply = response.choices[0].message.content
     history.append({"role": "assistant", "content": reply})
     return reply</code></pre>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Debugging Checklist</h2>
-        <ul class="checklist">
+    <!-- 8 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Debugging Checklist</h2>
+        <ul class="checklist r">
           <li>Is <code>GROQ_API_KEY</code> set? (<code>echo $GROQ_API_KEY</code>)</li>
           <li>Correct model name from Groq docs?</li>
           <li>Internet / VPN / firewall blocking API?</li>
           <li>429 rate limit — slow down or wait</li>
           <li>Empty user input handled in your loop?</li>
         </ul>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Common Issues (Q&amp;A)</h2>
-        <table>
-          <thead>
-            <tr><th>Symptom</th><th>Solution</th></tr>
-          </thead>
+    <!-- 9 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Common Issues (Q&amp;A)</h2>
+        <table class="r">
+          <thead><tr><th>Symptom</th><th>Solution</th></tr></thead>
           <tbody>
             <tr><td><code>KeyError: GROQ_API_KEY</code></td><td>Export env var or use <code>python-dotenv</code></td></tr>
             <tr><td>Bot ignores personality</td><td>Put instructions in <code>system</code>, not <code>user</code></td></tr>
@@ -142,58 +318,197 @@ def chat_turn(user_message: str) -> str:
             <tr><td>Colab secrets</td><td>Use Colab "Secrets" for API key storage</td></tr>
           </tbody>
         </table>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Stretch Goals</h2>
-        <ul>
+    <!-- 10 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Stretch Goals</h2>
+        <ul class="r">
           <li><strong>Conversation history</strong> — multi-turn memory</li>
           <li><strong>Streaming</strong> — print tokens as they arrive</li>
           <li><strong>CLI flags</strong> — switch personality via argument</li>
           <li><strong>Enhance your Class 2 Gradio app</strong> with a personality (optional)</li>
         </ul>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Presentation Rubric</h2>
-        <p>When you demo (2–3 min), show:</p>
-        <ol>
+    <!-- 11 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Presentation Rubric</h2>
+        <p class="r" style="margin-bottom:8px;">When you demo (2–3 min), show:</p>
+        <ol class="r">
           <li>Your chosen <strong>personality</strong> and why</li>
           <li><strong>3 example questions</strong> and bot replies</li>
           <li>One thing you <strong>debugged</strong> or learned</li>
           <li>(Optional) Code snippet of your system prompt</li>
         </ol>
-      </section>
+      </div>
+    </section>
 
-      <section>
-        <h2>Preview: Week 2</h2>
-        <ul>
-          <li><strong>Prompt engineering</strong> — zero-shot, few-shot, chain-of-thought, zero-shot CoT</li>
-          <li><strong>LangChain + LangGraph</strong> — prompt templates and multi-step exam-prep agent</li>
+    <!-- 12 -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2 class="r">Preview: Week 2</h2>
+        <ul class="r">
+          <li><strong>Prompt engineering</strong> — zero-shot, few-shot, chain-of-thought</li>
+          <li><strong>LangChain + LangGraph</strong> — templates and a multi-step exam-prep agent</li>
           <li><strong>Web scraping</strong> — quotes.toscrape.com, books.toscrape.com</li>
           <li><strong>PDF parsing + chunking</strong> — build a knowledge dataset for embeddings</li>
         </ul>
-        <div class="callout callout--info">
-          <p>Lab deliverable: LangGraph agent + chunked dataset ready for Week 3 embeddings.</p>
-        </div>
-      </section>
+        <div class="callout r"><p>Lab deliverable: LangGraph agent + chunked dataset ready for Week 3 embeddings.</p></div>
+      </div>
+    </section>
 
-      <section data-align="center">
-        <h2>Week 1 Complete</h2>
-        <ul class="checklist" style="display: inline-block; text-align: left;">
+    <!-- 13 -->
+    <section class="slide center">
+      <div class="slide-inner">
+        <h2 class="r">Week 1 Complete</h2>
+        <ul class="checklist r" style="display:inline-block;text-align:left;">
           <li>You understand chatbot pipelines</li>
           <li>You can call Groq from Python</li>
           <li>You built a personalized chatbot</li>
         </ul>
-        <p class="subtitle" style="margin-top: 1.5rem;">Questions? Open office hours · See you in Week 2</p>
-      </section>
+        <p class="subtitle r" style="margin-top:24px;">Questions? Open office hours · See you in Week 2</p>
+      </div>
+    </section>
 
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="deck-chrome-bottom">
+      <span class="counter" id="slideCounter">01 / 13</span>
+      <span class="hint">Nav <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>Space</kbd></span>
     </div>
-  </div>
+  </main>
+  <div class="crt-overlay"></div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
-  <script src="../assets/js/site.js"></script>
+<script>
+class SlidePresentation{
+  constructor(){
+    this.slides=document.querySelectorAll('.slide');
+    this.current=0;
+    this.stage=document.getElementById('deckStage');
+    this.counter=document.getElementById('slideCounter');
+    this.fill=document.getElementById('progressFill');
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.showSlide(0);
+  }
+  setupStageScale(){
+    const scale=()=>{
+      const f=Math.min(window.innerWidth/1920, window.innerHeight/1080);
+      const x=(window.innerWidth-1920*f)/2;
+      const y=(window.innerHeight-1080*f)/2;
+      this.stage.style.transform=`translate(${x}px, ${y}px) scale(${f})`;
+    };
+    scale();
+    window.addEventListener('resize', scale);
+  }
+  setupKeyboardNav(){
+    document.addEventListener('keydown', (e)=>{
+      if(e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+      if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ this.next(); e.preventDefault(); }
+      if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ this.prev(); e.preventDefault(); }
+    });
+  }
+  setupTouchNav(){
+    let sx=0;
+    document.addEventListener('touchstart', (e)=>{ sx=e.touches[0].clientX; });
+    document.addEventListener('touchend', (e)=>{
+      const dx=e.changedTouches[0].clientX-sx;
+      if(dx<-50) this.next();
+      if(dx>50) this.prev();
+    });
+    document.addEventListener('wheel', (e)=>{
+      if(Math.abs(e.deltaY)<30) return;
+      if(e.deltaY>0) this.next(); else this.prev();
+    }, {passive:true});
+  }
+  showSlide(i){
+    this.current=Math.max(0, Math.min(i, this.slides.length-1));
+    this.slides.forEach((s,idx)=>{
+      s.classList.toggle('active', idx===this.current);
+      s.classList.toggle('visible', idx===this.current);
+    });
+    if(this.counter) this.counter.textContent = String(this.current+1).padStart(2,'0')+' / '+String(this.slides.length).padStart(2,'0');
+    if(this.fill) this.fill.style.width = ((this.current+1)/this.slides.length*100)+'%';
+  }
+  next(){ this.showSlide(this.current+1); }
+  prev(){ this.showSlide(this.current-1); }
+}
+
+function highlightCode(){
+  document.querySelectorAll('pre code').forEach((block)=>{
+    const raw=block.textContent;
+    const esc=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const kws='def|return|import|from|if|elif|else|for|while|in|True|False|None|class|try|except|as|break|continue|and|or|not|with|lambda';
+    const pattern=new RegExp('(#.*$)|("""[\\s\\S]*?"""|\'\'\'[\\s\\S]*?\'\'\'|"[^"\\n]*"|\'[^\'\\n]*\')|\\b('+kws+')\\b','gm');
+    block.innerHTML = esc.replace(pattern, (m, cm, str, kw)=>{
+      if(cm) return '<span class="cm">'+cm+'</span>';
+      if(str) return '<span class="str">'+str+'</span>';
+      if(kw) return '<span class="kw">'+kw+'</span>';
+      return m;
+    });
+  });
+}
+
+class InlineEditor{
+  constructor(storageKey){
+    this.storageKey=storageKey;
+    this.isActive=false;
+    this.restore();
+  }
+  restore(){
+    const saved=localStorage.getItem(this.storageKey);
+    if(!saved) return;
+    try{
+      const data=JSON.parse(saved);
+      document.querySelectorAll('.slide').forEach((s,i)=>{ if(data[i]!==undefined) s.innerHTML=data[i]; });
+    }catch(e){}
+  }
+  save(){
+    const data=Array.from(document.querySelectorAll('.slide')).map(s=>s.innerHTML);
+    localStorage.setItem(this.storageKey, JSON.stringify(data));
+  }
+  toggleEditMode(){
+    this.isActive=!this.isActive;
+    document.querySelectorAll('.slide h1,.slide h2,.slide h3,.slide p,.slide li,.slide span').forEach(el=>{
+      el.setAttribute('contenteditable', this.isActive ? 'true':'false');
+    });
+    document.getElementById('editToggle').classList.toggle('active', this.isActive);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  highlightCode();
+  window.deck = new SlidePresentation();
+
+  const editor = new InlineEditor('deck-edits::week1-class3');
+  const hotzone=document.querySelector('.edit-hotzone');
+  const editToggle=document.getElementById('editToggle');
+  let hideTimeout=null;
+  if(hotzone && editToggle){
+    editToggle.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('mouseenter', ()=>{clearTimeout(hideTimeout); editToggle.classList.add('show');});
+    hotzone.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+    editToggle.addEventListener('mouseenter', ()=>clearTimeout(hideTimeout));
+    editToggle.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+  }
+  document.addEventListener('keydown', (e)=>{
+    if((e.key==='e'||e.key==='E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable')==='true')){ editor.toggleEditMode(); }
+    if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); editor.save(); }
+  });
+});
+</script>
+
+<div class="edit-hotzone" style="position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)" style="position:fixed;top:12px;left:12px;z-index:10001;opacity:0;pointer-events:none;transition:opacity 0.3s ease;background:var(--bg-panel);border:1px solid var(--phosphor);color:var(--phosphor);font-size:18px;padding:8px 12px;">&#9998;</button>
+<style>
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+</style>
 </body>
 </html>
