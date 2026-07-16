@@ -280,7 +280,20 @@ assert len(standings) == 48</code></pre>
 
     <!-- 9 -->
     <section class="slide"><div class="slide-inner">
-      <p class="eyebrow r">Notebook · Section 9 — required challenge</p>
+      <p class="eyebrow r">Notebook · Section 9</p>
+      <h2 class="r">Ask the LLM: World Cup Data as Context</h2>
+      <pre class="r"><code class="language-python">group_a = standings_df[standings_df["group"] == "A"].sort_values("position")
+context = group_a[["position","team","played","won","drawn","lost","points"]].to_string(index=False)
+
+question = "Which team topped Group A and with how many points?"
+answer = answer_from_context(question, context)
+print(answer)</code></pre>
+      <p class="r">Same <code>context_chunks</code> pattern as your Class 3 <strong>docs</strong> node — context can be a dataframe slice, not just scraped prose.</p>
+    </div></section>
+
+    <!-- 10 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 10 — required challenge</p>
       <h2 class="r">Challenge: Enriched Book Crawler</h2>
       <ul class="r">
         <li>Crawl <strong>3 pages</strong> of books.toscrape.com, then visit every book's detail page</li>
@@ -292,9 +305,9 @@ assert len(standings) == 48</code></pre>
       <p class="footnote r">Bonus: calculate average price by category.</p>
     </div></section>
 
-    <!-- 10 -->
+    <!-- 11 -->
     <section class="slide"><div class="slide-inner">
-      <p class="eyebrow r">Notebook · Section 10</p>
+      <p class="eyebrow r">Notebook · Section 11</p>
       <h2 class="r">PDF Parsing</h2>
       <pre class="r"><code class="language-python">!pip install -q pymupdf
 
@@ -308,9 +321,9 @@ print(full_text[:500])</code></pre>
       <p class="r">Alternative: <code>pdfplumber</code> for table-heavy PDFs.</p>
     </div></section>
 
-    <!-- 11 -->
+    <!-- 12 -->
     <section class="slide"><div class="slide-inner">
-      <p class="eyebrow r">Notebook · Section 12</p>
+      <p class="eyebrow r">Notebook · Section 13</p>
       <h2 class="r">Chunking for Embeddings</h2>
       <pre class="r"><code class="language-python">def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
     chunks = []
@@ -326,7 +339,7 @@ print(f"{len(chunks)} chunks, first: {chunks[0][:100]}...")</code></pre>
       <p class="r">Week 3: each chunk becomes a vector in FAISS / Qdrant.</p>
     </div></section>
 
-    <!-- 12 -->
+    <!-- 13 -->
     <section class="slide"><div class="slide-inner">
       <h2 class="r">Why Chunk Size Matters</h2>
       <table class="r">
@@ -340,9 +353,9 @@ print(f"{len(chunks)} chunks, first: {chunks[0][:100]}...")</code></pre>
       <p class="r" style="margin-top:20px;"><strong>Overlap</strong> prevents sentences from being cut in half at boundaries.</p>
     </div></section>
 
-    <!-- 13 -->
+    <!-- 14 -->
     <section class="slide"><div class="slide-inner">
-      <p class="eyebrow r">Notebook · Section 13</p>
+      <p class="eyebrow r">Notebook · Section 14</p>
       <h2 class="r">Wire Data into Your Agent</h2>
       <pre class="r"><code class="language-python">sample_chunk = chunks[0] if chunks else blog_posts[0]["summary"]
 
@@ -357,9 +370,9 @@ print(answer)
       <p class="r"><code>answer_from_context()</code> is a condensed recap of your Class 3 <strong>docs</strong> node — swap in your real <code>agent.invoke(...)</code> if it's running elsewhere.</p>
     </div></section>
 
-    <!-- 14 -->
+    <!-- 15 -->
     <section class="slide"><div class="slide-inner">
-      <p class="eyebrow r">Notebook · Section 14</p>
+      <p class="eyebrow r">Notebook · Section 15</p>
       <h2 class="r">Deliverable Checklist</h2>
       <ul class="checklist r">
         <li>Agent routes chat / calculate / research / docs correctly (one prompt per intent)</li>
@@ -371,7 +384,7 @@ print(answer)
       </ul>
     </div></section>
 
-    <!-- 15 -->
+    <!-- 16 -->
     <section class="slide"><div class="slide-inner">
       <h2 class="r">Debugging Checklist</h2>
       <table class="r">
@@ -386,7 +399,7 @@ print(answer)
       </table>
     </div></section>
 
-    <!-- 16 -->
+    <!-- 17 -->
     <section class="slide"><div class="slide-inner">
       <h2 class="r">Presentation Rubric</h2>
       <p class="r" style="margin-bottom:8px;">When you demo (2–3 min), show:</p>
@@ -398,7 +411,7 @@ print(answer)
       </ol>
     </div></section>
 
-    <!-- 17 -->
+    <!-- 18 -->
     <section class="slide"><div class="slide-inner">
       <h2 class="r">Preview: Week 3</h2>
       <ul class="r">
@@ -410,7 +423,7 @@ print(answer)
       <div class="callout r"><p>The chunked dataset you build today is the knowledge base for your final RAG bot.</p></div>
     </div></section>
 
-    <!-- 18 -->
+    <!-- 19 -->
     <section class="slide center"><div class="slide-inner">
       <h2 class="r">Week 2 Complete</h2>
       <ul class="checklist r" style="display:inline-block;text-align:left;">
@@ -423,7 +436,7 @@ print(answer)
     </div></section>
 
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 18</span><span class="hint">Nav <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>Space</kbd></span></div>
+    <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 19</span><span class="hint">Nav <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>Space</kbd></span></div>
   </main>
 </div>
 
