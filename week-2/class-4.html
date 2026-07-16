@@ -182,7 +182,8 @@ h1.hero-title .split-word{color:var(--white);background:var(--blue);padding:0 22
       <div class="callout r"><p><strong>Data-Powered LangGraph Agent</strong></p></div>
       <ul class="r">
         <li><strong>Your Class 3 agent</strong> — chat / calculate / research / docs routing, already working</li>
-        <li><strong>Scraped dataset</strong> — quotes from quotes.toscrape.com (stretch: books.toscrape.com)</li>
+        <li><strong>Two scraped datasets</strong> — blog posts (blog.python.org) + World Cup group tables (Wikipedia)</li>
+        <li><strong>Challenge dataset</strong> — 60 enriched books from books.toscrape.com (3 pages + detail pages)</li>
         <li><strong>PDF chunks</strong> — parse and chunk at least one PDF for Week 3 embeddings</li>
         <li><strong>Demo</strong> — 2–3 min showing agent routing + sample data</li>
       </ul>
@@ -224,55 +225,71 @@ h1.hero-title .split-word{color:var(--white);background:var(--blue);padding:0 22
     <!-- 6 -->
     <section class="slide"><div class="slide-inner">
       <p class="eyebrow r">Notebook · Section 4</p>
-      <h2 class="r">requests + BeautifulSoup</h2>
+      <h2 class="r">Demo 1: Scrape a Blog You Can See</h2>
       <pre class="r"><code class="language-python">!pip install -q requests beautifulsoup4
 
 import requests
 from bs4 import BeautifulSoup
 
-url = "https://quotes.toscrape.com/"
-response = requests.get(url, timeout=10)
+url = "https://blog.python.org/"
+response = requests.get(url, headers=HEADERS, timeout=20)
 response.raise_for_status()
-soup = BeautifulSoup(response.text, "html.parser")</code></pre>
+soup = BeautifulSoup(response.text, "html.parser")
+
+print(len(soup.select("article")), "post cards found")</code></pre>
+      <p class="r">Point out the repeated <strong>title, author, date, summary</strong> on each post card — those become our fields.</p>
     </div></section>
 
     <!-- 7 -->
     <section class="slide"><div class="slide-inner">
       <p class="eyebrow r">Notebook · Section 5</p>
-      <h2 class="r">Extract Quotes</h2>
-      <pre class="r"><code class="language-python">quotes = []
-for item in soup.select("div.quote"):
-    text = item.select_one("span.text").get_text(strip=True)
-    author = item.select_one("small.author").get_text(strip=True)
-    quotes.append({"text": text, "author": author})
-print(quotes[:3])</code></pre>
+      <h2 class="r">Extract &amp; Save Blog Posts</h2>
+      <pre class="r"><code class="language-python">posts = []
+for card in soup.select("article"):
+    title = card.select_one("h3").get_text(strip=True)
+    date = card.select_one("time")
+    summary = card.select_one("p")
+    posts.append({
+        "title": title,
+        "date": date.get("datetime", "") if date else "",
+        "summary": summary.get_text(strip=True) if summary else "",
+    })
+
+json.dump(posts, open("data/python_blog_posts.json", "w"), indent=2)</code></pre>
+      <p class="r">CSS selectors describe what we can already see — <code>h3</code>, <code>time</code>, <code>p</code> inside each card.</p>
     </div></section>
 
     <!-- 8 -->
     <section class="slide"><div class="slide-inner">
-      <p class="eyebrow r">Notebook · Section 7</p>
-      <h2 class="r">Save Scraped Data</h2>
-      <pre class="r"><code class="language-python">import json
-from pathlib import Path
+      <p class="eyebrow r">Notebook · Sections 7–8</p>
+      <h2 class="r">Demo 2: Nested Tables — 2022 World Cup</h2>
+      <pre class="r"><code class="language-python">WORLD_CUP_URL = "https://en.wikipedia.org/wiki/2022_FIFA_World_Cup"
+soup = BeautifulSoup(requests.get(WORLD_CUP_URL, headers=HEADERS).text, "html.parser")
 
-data_dir = Path("data")
-data_dir.mkdir(exist_ok=True)
+standings = []
+for group in "ABCDEFGH":
+    heading = soup.find(id=f"Group_{group}")
+    table = heading.find_next("table", class_="wikitable")
+    for row in table.select("tr")[1:]:
+        cells = row.find_all(["th", "td"], recursive=False)
+        # ...parse position, team, played, points...
 
-with open(data_dir / "scraped_quotes.json", "w") as f:
-    json.dump(quotes, f, indent=2)
-print(f"Saved {len(quotes)} quotes")</code></pre>
+assert len(standings) == 32</code></pre>
+      <p class="r">Find each group heading by <code>id</code>, then the next standings table — more explainable than "table number 12."</p>
     </div></section>
 
     <!-- 9 -->
     <section class="slide"><div class="slide-inner">
-      <p class="eyebrow r">Notebook · Sections 8–9 — pagination</p>
-      <h2 class="r">Stretch: books.toscrape.com</h2>
+      <p class="eyebrow r">Notebook · Section 9 — required challenge</p>
+      <h2 class="r">Challenge: Enriched Book Crawler</h2>
       <ul class="r">
-        <li>Scrape book titles, prices, ratings across pages</li>
-        <li>Follow <code>next</code> links until done (or cap at N pages)</li>
-        <li>Pick books in <strong>your project domain</strong> (history, science, fiction…)</li>
+        <li>Crawl <strong>3 pages</strong> of books.toscrape.com, then visit every book's detail page</li>
+        <li>Collect <code>title</code>, <code>category</code>, <code>price_gbp</code>, <code>rating</code>, <code>availability</code></li>
+        <li>Build next-page URLs with <code>urljoin</code> — never string-concatenate</li>
+        <li>Dedupe by URL, add a 1-second delay between requests</li>
+        <li>Save 60 unique books to <code>data/scraped_books_enriched.json</code></li>
       </ul>
-      <p class="footnote r">Practice site: books.toscrape.com</p>
+      <p class="footnote r">Bonus: calculate average price by category.</p>
     </div></section>
 
     <!-- 10 -->
@@ -327,15 +344,17 @@ print(f"{len(chunks)} chunks, first: {chunks[0][:100]}...")</code></pre>
     <section class="slide"><div class="slide-inner">
       <p class="eyebrow r">Notebook · Section 13</p>
       <h2 class="r">Wire Data into Your Agent</h2>
-      <pre class="r"><code class="language-python"># Pass a real chunk as context to the docs node
-sample_chunk = chunks[0] if chunks else ""
+      <pre class="r"><code class="language-python">sample_chunk = chunks[0] if chunks else blog_posts[0]["summary"]
 
-result = agent.invoke({
-    "messages": [("user", "Summarize this for me")],
-    "intent": "",
-    "context_chunks": sample_chunk,
-})</code></pre>
-      <p class="r">The <strong>docs</strong> node uses <code>context_chunks</code> in its prompt — no more placeholder, this is your first taste of RAG.</p>
+answer = answer_from_context(
+    "Summarize this text in one sentence.",
+    sample_chunk,
+)
+print(answer)
+
+# Class 3 agent open elsewhere? Swap in:
+# agent.invoke({"messages": [...], "context_chunks": sample_chunk})</code></pre>
+      <p class="r"><code>answer_from_context()</code> is a condensed recap of your Class 3 <strong>docs</strong> node — swap in your real <code>agent.invoke(...)</code> if it's running elsewhere.</p>
     </div></section>
 
     <!-- 14 -->
@@ -344,10 +363,11 @@ result = agent.invoke({
       <h2 class="r">Deliverable Checklist</h2>
       <ul class="checklist r">
         <li>Agent routes chat / calculate / research / docs correctly (one prompt per intent)</li>
-        <li><code>data/scraped_quotes.json</code> (or books JSON) saved</li>
+        <li><code>data/python_blog_posts.json</code> saved</li>
+        <li><code>data/world_cup_2022_group_standings.json</code> contains 32 teams</li>
+        <li>Challenge: <code>data/scraped_books_enriched.json</code> contains 60 unique enriched books</li>
         <li>At least one PDF parsed and chunked to <code>data/chunks.json</code></li>
-        <li><code>docs</code> node uses <code>context_chunks</code> from your dataset, not a placeholder</li>
-        <li>Demo ready: agent routing + one scrape sample + one PDF chunk</li>
+        <li><code>docs</code> node answers using a real chunk from your dataset, not a placeholder</li>
       </ul>
     </div></section>
 
@@ -372,7 +392,7 @@ result = agent.invoke({
       <p class="r" style="margin-bottom:8px;">When you demo (2–3 min), show:</p>
       <ol class="r">
         <li><strong>Agent routing</strong> — one prompt per intent (chat, calculate, research, docs)</li>
-        <li><strong>Scrape sample</strong> — 2–3 quotes or books from your JSON file</li>
+        <li><strong>Scrape sample</strong> — 2–3 rows from any of your JSON datasets (blog, World Cup, or books)</li>
         <li><strong>PDF chunk sample</strong> — one chunk and its source</li>
         <li><strong>Data-grounded answer</strong> — docs node using your real chunk</li>
       </ol>
