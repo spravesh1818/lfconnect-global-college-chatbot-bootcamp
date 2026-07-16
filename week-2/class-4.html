@@ -262,20 +262,20 @@ json.dump(posts, open("data/python_blog_posts.json", "w"), indent=2)</code></pre
     <!-- 8 -->
     <section class="slide"><div class="slide-inner">
       <p class="eyebrow r">Notebook · Sections 7–8</p>
-      <h2 class="r">Demo 2: Nested Tables — 2022 World Cup</h2>
-      <pre class="r"><code class="language-python">WORLD_CUP_URL = "https://en.wikipedia.org/wiki/2022_FIFA_World_Cup"
+      <h2 class="r">Demo 2: Nested Tables — 2026 World Cup</h2>
+      <pre class="r"><code class="language-python">WORLD_CUP_URL = "https://en.wikipedia.org/wiki/2026_FIFA_World_Cup"
 soup = BeautifulSoup(requests.get(WORLD_CUP_URL, headers=HEADERS).text, "html.parser")
 
 standings = []
-for group in "ABCDEFGH":
+for group in "ABCDEFGHIJKL":
     heading = soup.find(id=f"Group_{group}")
     table = heading.find_next("table", class_="wikitable")
     for row in table.select("tr")[1:]:
         cells = row.find_all(["th", "td"], recursive=False)
         # ...parse position, team, played, points...
 
-assert len(standings) == 32</code></pre>
-      <p class="r">Find each group heading by <code>id</code>, then the next standings table — more explainable than "table number 12."</p>
+assert len(standings) == 48</code></pre>
+      <p class="r">Find each group heading by <code>id</code>, then the next standings table — more explainable than "table number 12." Group stage is locked in even mid-tournament.</p>
     </div></section>
 
     <!-- 9 -->
@@ -364,7 +364,7 @@ print(answer)
       <ul class="checklist r">
         <li>Agent routes chat / calculate / research / docs correctly (one prompt per intent)</li>
         <li><code>data/python_blog_posts.json</code> saved</li>
-        <li><code>data/world_cup_2022_group_standings.json</code> contains 32 teams</li>
+        <li><code>data/world_cup_2026_group_standings.json</code> contains 48 teams</li>
         <li>Challenge: <code>data/scraped_books_enriched.json</code> contains 60 unique enriched books</li>
         <li>At least one PDF parsed and chunked to <code>data/chunks.json</code></li>
         <li><code>docs</code> node answers using a real chunk from your dataset, not a placeholder</li>
