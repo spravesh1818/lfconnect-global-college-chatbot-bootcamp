@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class 2 — Vector Search at Scale: FAISS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   LATENT SPACE DECK ENGINE — Week 3 shared theme
+   Deep navy-black, violet + cyan accents, Space Grotesk + JetBrains Mono.
+   All Week 3 class decks (class-1/2/3) reuse this exact block.
+   ============================================================ */
+:root{
+  --stage-bg:#07080f;
+  --bg:#07080f;
+  --panel:#10121f;
+  --violet:#8b5cf6;
+  --violet-soft:#a78bfa;
+  --cyan:#22d3ee;
+  --white:#eef0f8;
+  --ink:#eef0f8;
+  --dim:#a7aec4;
+  --dim-light:#6b7390;
+  --faint:#4a5068;
+  --line:#1c2035;
+  --amber:#fbbf24;
+  --red:#f87171;
+  --green:#34d399;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* === FIXED 16:9 STAGE (viewport-base.css) === */
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--slide-bg,#07080f);}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;background:var(--slide-bg,#07080f);}
+.slide.active,.slide.visible{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+.deck-controls{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;}
+@media print{
+  html,body{width:1920px;height:auto;overflow:visible;background:#07080f;}
+  .deck-viewport{position:static;overflow:visible;background:#07080f;}
+  .deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none;}
+  .slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always;}
+  .slide:last-child{break-after:auto;page-break-after:auto;}
+  .deck-controls{display:none!important;}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important;}}
+/* === END viewport-base.css === */
+
+body{font-family:'Space Grotesk',sans-serif;}
+.deck-stage{background:var(--bg);}
+.slide{background:var(--bg);}
+.slide::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 40% at 18% -5%, rgba(139,92,246,0.10), transparent),
+             radial-gradient(ellipse 50% 35% at 92% 6%, rgba(34,211,238,0.06), transparent);
+}
+
+.accent-edge{position:absolute;top:0;bottom:0;left:0;width:10px;background:linear-gradient(180deg,var(--violet),var(--cyan));z-index:45;}
+
+.deck-chrome-top{
+  position:absolute;top:0;left:0;right:0;height:80px;z-index:40;
+  display:flex;align-items:center;gap:14px;padding:0 64px 0 84px;
+  border-bottom:1px solid var(--line);
+  font-size:16px;font-weight:700;letter-spacing:1.5px;color:var(--dim-light);
+}
+.deck-chrome-top .sq{width:12px;height:12px;background:var(--violet);box-shadow:0 0 10px var(--violet);}
+.deck-chrome-top .hub-link{color:var(--white);text-decoration:none;font-weight:700;border:1px solid var(--line);padding:3px 12px;font-size:15px;letter-spacing:0.5px;text-transform:none;transition:background 0.15s ease, border-color 0.15s ease;}
+.deck-chrome-top .hub-link:hover{background:rgba(139,92,246,0.15);border-color:var(--violet);}
+.deck-chrome-top .path{color:var(--white);font-family:'JetBrains Mono',monospace;font-size:15px;}
+.deck-chrome-top .weekmeta{margin-left:auto;text-transform:uppercase;}
+
+.deck-chrome-bottom{
+  position:absolute;bottom:0;left:0;right:0;height:60px;z-index:40;
+  display:flex;align-items:center;padding:0 64px 0 84px;
+  font-size:15px;color:var(--dim-light);
+}
+.deck-chrome-bottom .counter{font-weight:700;color:var(--white);font-family:'JetBrains Mono',monospace;}
+.deck-chrome-bottom .hint{margin-left:auto;}
+.deck-chrome-bottom .hint kbd{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:2px 8px;margin:0 2px;color:var(--dim);}
+
+.progress-track{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--line);z-index:41;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));transition:width 0.3s ease;}
+
+.slide-inner{position:absolute;top:130px;left:150px;right:150px;bottom:110px;display:flex;flex-direction:column;}
+.slide.center .slide-inner{align-items:center;justify-content:center;text-align:center;}
+
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--violet-soft);margin-bottom:16px;}
+h2{font-weight:700;font-size:60px;letter-spacing:-1.5px;line-height:1.08;color:var(--white);margin-bottom:32px;}
+.slide p{font-size:27px;color:var(--dim);line-height:1.55;font-weight:400;}
+.slide strong{color:var(--white);font-weight:700;}
+.slide a{color:var(--cyan);}
+.slide code{font-family:'JetBrains Mono',monospace;font-size:0.92em;color:var(--cyan);}
+.subtitle{font-size:25px;color:var(--dim-light);margin-top:8px;font-weight:500;}
+.footnote{font-size:19px;color:var(--dim-light);margin-top:22px;}
+
+ul,ol{margin-left:38px;}
+.slide li{font-size:27px;color:var(--dim);line-height:1.5;margin-bottom:12px;font-weight:400;}
+ul.checklist{list-style:none;margin-left:0;}
+ul.checklist li{padding-left:34px;position:relative;}
+ul.checklist li::before{content:"\2192";color:var(--cyan);font-weight:700;position:absolute;left:0;}
+
+pre{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--violet);padding:28px 32px;margin-top:18px;overflow:hidden;}
+pre code{font-family:'JetBrains Mono',monospace;font-size:20px;line-height:1.48;color:#dfe3f2;white-space:pre;}
+.kw{color:var(--violet-soft);font-weight:700;}
+.str{color:var(--cyan);}
+.cm{color:#5b6178;font-style:italic;}
+
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:60px;}
+.columns h3{font-size:26px;font-weight:700;color:var(--violet-soft);margin-bottom:12px;}
+
+.callout{border-left:4px solid var(--violet);background:rgba(139,92,246,0.10);padding:22px 28px;margin-top:20px;font-size:24px;color:var(--white);font-weight:400;}
+.callout p{color:var(--white);}
+.callout--warning{border-left-color:var(--amber);background:rgba(251,191,36,0.08);}
+.callout--error{border-left-color:var(--red);background:rgba(248,113,113,0.08);}
+.callout--info{border-left-color:var(--cyan);background:rgba(34,211,238,0.08);}
+
+table{width:100%;border-collapse:collapse;margin-top:18px;font-size:22px;}
+th{background:var(--panel);color:var(--violet-soft);text-align:left;padding:13px 16px;font-weight:700;border-bottom:2px solid var(--violet);}
+td{border-top:1px solid var(--line);padding:13px 16px;color:var(--dim);}
+td strong{color:var(--white);}
+
+.pipeline{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin:28px 0;}
+.pipeline-step{background:var(--panel);border:1px solid var(--violet);color:var(--white);padding:16px 28px;font-size:24px;font-weight:700;}
+.pipeline-step.ghost{border-color:var(--line);color:var(--dim-light);}
+.pipeline-step.hot{background:rgba(139,92,246,0.2);box-shadow:0 0 18px rgba(139,92,246,0.35);}
+.pipeline-arrow{color:var(--cyan);font-size:30px;font-weight:700;}
+
+.qr-figure{text-align:center;margin-top:20px;}
+.qr-figure img{max-width:300px;border:2px solid var(--violet);padding:14px;background:#fff;}
+.qr-figure figcaption{margin-top:12px;font-size:19px;color:var(--dim-light);}
+
+.colab-btn{display:inline-block;background:var(--panel);color:var(--white)!important;font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:2px;padding:14px 36px;text-decoration:none!important;border:2px solid var(--cyan);}
+.colab-btn:hover{background:rgba(34,211,238,0.12);}
+
+/* title slide */
+.title-slide .panel-glow{position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 110%, rgba(139,92,246,0.28), transparent);}
+h1.hero-title{font-weight:700;font-size:104px;letter-spacing:-2px;line-height:1.05;color:var(--white);max-width:1550px;}
+h1.hero-title .split-word{color:var(--bg);background:linear-gradient(100deg,var(--violet),var(--cyan));padding:0 22px;display:inline-block;}
+.hero-sub{margin-top:28px;font-size:26px;font-weight:400;color:var(--dim-light);max-width:1000px;}
+.stat-block{position:absolute;right:96px;bottom:96px;display:flex;gap:56px;z-index:2;}
+.stat{text-align:right;}
+.stat .num{font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:var(--cyan);line-height:1;}
+.stat .label{margin-top:6px;font-size:15px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim-light);}
+
+.slide .r{opacity:0;transform:translateY(18px);transition:opacity 0.5s ease-out, transform 0.5s ease-out;}
+.slide.active .r{opacity:1;transform:translateY(0);}
+.slide .r:nth-child(1){transition-delay:0.05s;}
+.slide .r:nth-child(2){transition-delay:0.15s;}
+.slide .r:nth-child(3){transition-delay:0.25s;}
+.slide .r:nth-child(4){transition-delay:0.35s;}
+.slide .r:nth-child(5){transition-delay:0.45s;}
+
+/* vector-space toy diagram */
+.vspace{display:flex;gap:60px;align-items:center;margin-top:10px;}
+.vspace svg{flex:0 0 760px;background:var(--panel);border:1px solid var(--line);}
+.vspace .legend{font-size:24px;color:var(--dim);}
+.vspace .legend div{margin-bottom:14px;}
+.dot-l{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:12px;}
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
+    <div class="accent-edge"></div>
+    <div class="deck-chrome-top"><span class="sq"></span><a class="hub-link" href="index.html">&larr; Hub</a><span class="path">week-3/class-2</span><span class="weekmeta">Week 3 · Class 2</span></div>
+
+    <!-- 1 -->
+    <section class="slide active title-slide">
+      <div class="panel-glow"></div>
+      <div class="slide-inner">
+        <p class="eyebrow r">Latent Space</p>
+        <div class="r"><h1 class="hero-title">Vector Search<br>at <span class="split-word">Scale</span> — FAISS</h1></div>
+        <p class="hero-sub r">Week 3 · Class 2 · When the NumPy loop hits a million vectors</p>
+      </div>
+      <div class="stat-block r">
+        <div class="stat"><div class="num">100×</div><div class="label">Speedup target</div></div>
+        <div class="stat"><div class="num">3</div><div class="label">Index types</div></div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Recap: Your Class 1 Search Engine</h2>
+      <pre class="r"><code class="language-python">scores = corpus_embs @ q          # compare against EVERY vector
+top = np.argsort(scores)[::-1][:k]</code></pre>
+      <p class="r">This is <strong>brute-force exact search</strong>: N vectors × 384 dims of work for <em>every single query</em>.</p>
+      <table class="r">
+        <thead><tr><th>Corpus</th><th>Vectors</th><th>Per-query cost</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Your Week 2 chunks</td><td>~200</td><td>&lt; 1 ms</td><td><strong style="color:var(--green)">fine</strong></td></tr>
+          <tr><td>University knowledge base</td><td>~500 K</td><td>~200 ms + RAM pressure</td><td><strong style="color:var(--amber)">painful</strong></td></tr>
+          <tr><td>Web-scale</td><td>1 B+</td><td>minutes</td><td><strong style="color:var(--red)">impossible</strong></td></tr>
+        </tbody>
+      </table>
+    </div></section>
+
+    <!-- 3 -->
+    <section class="slide center"><div class="slide-inner">
+      <h2 class="r">Follow Along in Colab</h2>
+      <p class="subtitle r">week3_faiss_vector_search.ipynb — benchmarks run live on your runtime</p>
+      <p class="r" style="margin-top:24px;"><a class="colab-btn" href="https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-3/notebooks/week3_faiss_vector_search.ipynb" target="_blank" rel="noopener">Open in Colab</a></p>
+      <figure class="qr-figure r"><img src="../assets/images/qr-codes/week3-class-2.png" alt="QR code for Week 3 Class 2 notebook"></figure>
+    </div></section>
+
+    <!-- 4 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">The Core Trade: Exact vs Approximate</h2>
+      <div class="columns r">
+        <div>
+          <h3>Exact (k-NN)</h3>
+          <ul>
+            <li>Compare against everything</li>
+            <li>100% correct top-k</li>
+            <li>Cost grows linearly with N</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Approximate (ANN)</h3>
+          <ul>
+            <li>Smart data structures skip most vectors</li>
+            <li>~95–99% of the true top-k</li>
+            <li>10–1000× faster, sub-linear</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout r"><p>RAG retrieves context for an LLM that reads 3–5 chunks. Missing the true #7 result almost never changes the answer — <strong>ANN is the right trade</strong>.</p></div>
+    </div></section>
+
+    <!-- 5 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">FAISS</h2>
+      <p class="r"><strong>F</strong>acebook <strong>AI</strong> <strong>S</strong>imilarity <strong>S</strong>earch — Meta's open-source C++ library (with Python bindings) for vector indexing. The industry workhorse since 2017.</p>
+      <ul class="r">
+        <li><strong>A library, not a database</strong> — lives inside your Python process</li>
+        <li>Battle-tested at billion-vector scale, optional GPU acceleration</li>
+        <li>Many index families — we'll master three: <code>Flat</code>, <code>IVF</code>, <code>HNSW</code></li>
+      </ul>
+      <pre class="r"><code class="language-python">!pip install -q faiss-cpu
+
+import faiss
+print(faiss.__version__)</code></pre>
+    </div></section>
+
+    <!-- 6 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 4</p>
+      <h2 class="r">Baseline: The Flat Index (Exact)</h2>
+      <pre class="r"><code class="language-python">d = 384                                  # vector dimension
+index = faiss.IndexFlatIP(d)             # IP = inner product
+
+faiss.normalize_L2(embs)                 # normalize → IP == cosine
+index.add(embs)                          # (N, 384) float32
+print(index.ntotal)                      # N vectors stored
+
+scores, ids = index.search(query_vec, k=5)   # both (1, 5)</code></pre>
+      <ul class="r">
+        <li><code>IndexFlatIP</code> + L2-normalized vectors = <strong>exact cosine search</strong></li>
+        <li>Same results as your NumPy loop — but C++ speed and a stable API</li>
+        <li>Returns <strong>positions</strong> (<code>ids</code>), not text — remember that</li>
+      </ul>
+    </div></section>
+
+    <!-- 7 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 6</p>
+      <h2 class="r">IVF: Cluster First, Search Less</h2>
+      <div class="pipeline r">
+        <span class="pipeline-step">Train: k-means → 100 cells</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Assign each vector to a cell</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step hot">Query: scan only nprobe cells</span>
+      </div>
+      <pre class="r"><code class="language-python">nlist = 100                                   # number of clusters
+quantizer = faiss.IndexFlatIP(d)
+index = faiss.IndexIVFFlat(quantizer, d, nlist, faiss.METRIC_INNER_PRODUCT)
+
+index.train(embs)          # learn the 100 cluster centers
+index.add(embs)
+index.nprobe = 10          # search 10 of 100 cells → ~10× less work</code></pre>
+      <p class="footnote r">nprobe is your quality dial: 1 = fastest/riskiest, nlist = exact-but-slow.</p>
+    </div></section>
+
+    <!-- 8 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 7</p>
+      <h2 class="r">HNSW: A Graph You Can Ski Down</h2>
+      <p class="r">Hierarchical Navigable Small World — every vector becomes a graph node linked to its neighbors, with express layers on top like a skip list. Queries greedily hop toward the target.</p>
+      <pre class="r"><code class="language-python">index = faiss.IndexHNSWFlat(d, 32, faiss.METRIC_INNER_PRODUCT)  # 32 links/node
+index.hnsw.efSearch = 64        # exploration width at query time
+index.add(embs)                 # no training step needed</code></pre>
+      <ul class="r">
+        <li><strong>Best recall/speed trade at query time</strong> — the default in most modern vector DBs (including Qdrant)</li>
+        <li>Cost: more RAM (the graph) and slower inserts</li>
+      </ul>
+    </div></section>
+
+    <!-- 9 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 8</p>
+      <h2 class="r">Benchmark: 100K Vectors, Live</h2>
+      <table class="r">
+        <thead><tr><th>Index</th><th>Build</th><th>Query (1000×)</th><th>Recall@10</th></tr></thead>
+        <tbody>
+          <tr><td><code>IndexFlatIP</code> (exact)</td><td>instant</td><td>~1.0× (baseline)</td><td>1.000</td></tr>
+          <tr><td><code>IVF</code> nprobe=1</td><td>k-means train</td><td>~50–100× faster</td><td>~0.6–0.8</td></tr>
+          <tr><td><code>IVF</code> nprobe=10</td><td>k-means train</td><td>~10× faster</td><td>~0.95+</td></tr>
+          <tr><td><code>HNSW</code> ef=64</td><td>slowest build</td><td>~20–50× faster</td><td>~0.97+</td></tr>
+        </tbody>
+      </table>
+      <p class="footnote r">Numbers vary by machine — the notebook measures them on <em>your</em> runtime with <code>time.perf_counter()</code>. The shape of the trade is what matters.</p>
+    </div></section>
+
+    <!-- 10 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Recall@k — Measuring "Good Enough"</h2>
+      <pre class="r"><code class="language-python">true_ids = exact_index.search(queries, k)[1]     # ground truth
+ann_ids  = ivf_index.search(queries, k)[1]       # approximate
+
+recall = np.mean([
+    len(set(t) &amp; set(a)) / k
+    for t, a in zip(true_ids, ann_ids)
+])</code></pre>
+      <ul class="r">
+        <li><strong>Recall@k</strong> — of the true top-k, what fraction did the ANN index return?</li>
+        <li>0.95 means: on average, 9.5 of the true top-10 survive</li>
+        <li>This is how you tune <code>nprobe</code> / <code>efSearch</code> with evidence, not vibes</li>
+      </ul>
+    </div></section>
+
+    <!-- 11 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">The Metadata Problem</h2>
+      <p class="r">FAISS stores <strong>vectors only</strong>. <code>index.search()</code> gives you row numbers — it's on you to map them back to text and source.</p>
+      <pre class="r"><code class="language-python">chunk_store = [                       # position i ↔ vector i in the index
+    {"text": c["text"], "source": c["source"]} for c in all_chunks
+]
+
+scores, ids = index.search(q, k=3)
+for score, i in zip(scores[0], ids[0]):
+    hit = chunk_store[i]
+    print(f"{score:.3f}  [{hit['source']}]  {hit['text'][:70]}")</code></pre>
+      <div class="callout callout--warning r"><p>Want "search only PDF chunks" or "price &lt; £20"? With FAISS you filter <em>after</em> search, by hand. A real vector DB does this natively — that's Class 3.</p></div>
+    </div></section>
+
+    <!-- 12 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 10</p>
+      <h2 class="r">Persistence: Embed Once, Load Forever</h2>
+      <pre class="r"><code class="language-python">faiss.write_index(index, "week3_chunks.faiss")     # vectors
+json.dump(chunk_store, open("chunk_store.json", "w"))  # texts + sources
+
+# next session / other notebook:
+index = faiss.read_index("week3_chunks.faiss")
+chunk_store = json.load(open("chunk_store.json"))</code></pre>
+      <ul class="r">
+        <li>Embedding 100K chunks costs minutes; searching costs milliseconds — <strong>never re-embed what you can reload</strong></li>
+        <li>Index file + store file travel together, always in the same order</li>
+      </ul>
+    </div></section>
+
+    <!-- 13 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Choosing an Index — Cheat Sheet</h2>
+      <table class="r">
+        <thead><tr><th>Situation</th><th>Use</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>&lt; 100K vectors (your project!)</td><td><strong><code>IndexFlatIP</code></strong></td><td>Exact, instant, zero tuning</td></tr>
+          <tr><td>100K – 10M, RAM is fine</td><td><strong><code>HNSW</code></strong></td><td>Best query-time recall/speed</td></tr>
+          <tr><td>10M+, RAM is tight</td><td><strong><code>IVF</code> (+PQ compression)</td><td>Controls memory, tunable via nprobe</td></tr>
+          <tr><td>Need filters, CRUD, a server</td><td><strong>Vector DB</strong> (Qdrant…)</td><td>FAISS is a library, not a database</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><p>Rule of thumb: <strong>start Flat, graduate when latency hurts.</strong> Premature ANN is premature optimization.</p></div>
+    </div></section>
+
+    <!-- 14 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Homework</h2>
+      <ol class="r">
+        <li><strong>Index your Week 2 data</strong> — build a Flat FAISS index over your chunks + book dataset; save index + store to Drive</li>
+        <li><strong>Tune nprobe</strong> — on the synthetic 100K corpus, plot recall@10 vs query time for nprobe ∈ {1, 2, 5, 10, 20, 50}; find your "knee"</li>
+        <li><strong>Break IVF</strong> — craft a query whose true nearest neighbor sits in a cell IVF doesn't probe at nprobe=1; explain what happened</li>
+        <li><strong>Stretch:</strong> try <code>IndexIVFPQ</code> and report the memory savings vs recall cost</li>
+      </ol>
+    </div></section>
+
+    <!-- 15 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Next Class: From Library to Database</h2>
+      <ul class="r">
+        <li>FAISS gave us speed — but no payloads, no filters, no CRUD, no server</li>
+        <li><strong>Qdrant</strong>: collections, points, payload filters, HNSW under the hood</li>
+        <li>The payoff: your LangGraph agent's <code>docs</code> node does <strong>real retrieval</strong></li>
+      </ul>
+      <div class="callout r"><p>Bring your saved chunk dataset — Class 3 loads it into a real vector database and wires it into your agent.</p></div>
+    </div></section>
+
+    <!-- 16 -->
+    <section class="slide center"><div class="slide-inner">
+      <h2 class="r">Class 2 Complete</h2>
+      <ul class="checklist r" style="display:inline-block;text-align:left;">
+        <li>Exact vs approximate — and why RAG tolerates ANN</li>
+        <li>Flat, IVF, HNSW built and benchmarked on your runtime</li>
+        <li>Recall@k as the quality yardstick</li>
+        <li>Index + chunk store persisted and reloaded</li>
+      </ul>
+      <p class="subtitle r" style="margin-top:24px;">Next: Qdrant &amp; the retrieval-enabled agent</p>
+    </div></section>
+
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 16</span><span class="hint">Nav <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>Space</kbd></span></div>
+  </main>
+</div>
+
+<script>
+class SlidePresentation{
+  constructor(){
+    this.slides=document.querySelectorAll('.slide');
+    this.current=0;
+    this.stage=document.getElementById('deckStage');
+    this.counter=document.getElementById('slideCounter');
+    this.fill=document.getElementById('progressFill');
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.showSlide(0);
+  }
+  setupStageScale(){
+    const scale=()=>{
+      const f=Math.min(window.innerWidth/1920, window.innerHeight/1080);
+      const x=(window.innerWidth-1920*f)/2;
+      const y=(window.innerHeight-1080*f)/2;
+      this.stage.style.transform=`translate(${x}px, ${y}px) scale(${f})`;
+    };
+    scale();
+    window.addEventListener('resize', scale);
+  }
+  setupKeyboardNav(){
+    document.addEventListener('keydown', (e)=>{
+      if(e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+      if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ this.next(); e.preventDefault(); }
+      if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ this.prev(); e.preventDefault(); }
+    });
+  }
+  setupTouchNav(){
+    let sx=0;
+    document.addEventListener('touchstart', (e)=>{ sx=e.touches[0].clientX; });
+    document.addEventListener('touchend', (e)=>{
+      const dx=e.changedTouches[0].clientX-sx;
+      if(dx<-50) this.next();
+      if(dx>50) this.prev();
+    });
+    document.addEventListener('wheel', (e)=>{
+      if(Math.abs(e.deltaY)<30) return;
+      if(e.deltaY>0) this.next(); else this.prev();
+    }, {passive:true});
+  }
+  showSlide(i){
+    this.current=Math.max(0, Math.min(i, this.slides.length-1));
+    this.slides.forEach((s,idx)=>{
+      s.classList.toggle('active', idx===this.current);
+      s.classList.toggle('visible', idx===this.current);
+    });
+    if(this.counter) this.counter.textContent = String(this.current+1).padStart(2,'0')+' / '+String(this.slides.length).padStart(2,'0');
+    if(this.fill) this.fill.style.width = ((this.current+1)/this.slides.length*100)+'%';
+  }
+  next(){ this.showSlide(this.current+1); }
+  prev(){ this.showSlide(this.current-1); }
+}
+
+function highlightCode(){
+  document.querySelectorAll('pre code').forEach((block)=>{
+    const raw=block.textContent;
+    const esc=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const kws='def|return|import|from|if|elif|else|for|while|in|True|False|None|class|try|except|as|break|continue|and|or|not|with|lambda';
+    const pattern=new RegExp('(#.*$)|("""[\\s\\S]*?"""|\'\'\'[\\s\\S]*?\'\'\'|"[^"\\n]*"|\'[^\'\\n]*\')|\\b('+kws+')\\b','gm');
+    block.innerHTML = esc.replace(pattern, (m, cm, str, kw)=>{
+      if(cm) return '<span class="cm">'+cm+'</span>';
+      if(str) return '<span class="str">'+str+'</span>';
+      if(kw) return '<span class="kw">'+kw+'</span>';
+      return m;
+    });
+  });
+}
+
+class InlineEditor{
+  constructor(storageKey){
+    this.storageKey=storageKey;
+    this.isActive=false;
+    this.restore();
+  }
+  restore(){
+    const saved=localStorage.getItem(this.storageKey);
+    if(!saved) return;
+    try{
+      const data=JSON.parse(saved);
+      document.querySelectorAll('.slide').forEach((s,i)=>{ if(data[i]!==undefined) s.innerHTML=data[i]; });
+    }catch(e){}
+  }
+  save(){
+    const data=Array.from(document.querySelectorAll('.slide')).map(s=>s.innerHTML);
+    localStorage.setItem(this.storageKey, JSON.stringify(data));
+  }
+  toggleEditMode(){
+    this.isActive=!this.isActive;
+    document.querySelectorAll('.slide h1,.slide h2,.slide h3,.slide p,.slide li,.slide span').forEach(el=>{
+      el.setAttribute('contenteditable', this.isActive ? 'true':'false');
+    });
+    document.getElementById('editToggle').classList.toggle('active', this.isActive);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  highlightCode();
+  window.deck = new SlidePresentation();
+
+  const editor = new InlineEditor('deck-edits::week3-class2');
+  const hotzone=document.querySelector('.edit-hotzone');
+  const editToggle=document.getElementById('editToggle');
+  let hideTimeout=null;
+  if(hotzone && editToggle){
+    editToggle.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('mouseenter', ()=>{clearTimeout(hideTimeout); editToggle.classList.add('show');});
+    hotzone.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+    editToggle.addEventListener('mouseenter', ()=>clearTimeout(hideTimeout));
+    editToggle.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+  }
+  document.addEventListener('keydown', (e)=>{
+    if((e.key==='e'||e.key==='E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable')==='true')){ editor.toggleEditMode(); }
+    if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); editor.save(); }
+  });
+});
+</script>
+
+<div class="edit-hotzone" style="position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)" style="position:fixed;top:12px;left:12px;z-index:10001;opacity:0;pointer-events:none;transition:opacity 0.3s ease;background:var(--panel);border:1px solid var(--violet);color:var(--white);font-size:18px;padding:8px 12px;">&#9998;</button>
+<style>
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+</style>
+</body>
+</html>

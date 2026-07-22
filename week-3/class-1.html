@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class 1 — Embeddings: Meaning as Numbers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   LATENT SPACE DECK ENGINE — Week 3 shared theme
+   Deep navy-black, violet + cyan accents, Space Grotesk + JetBrains Mono.
+   All Week 3 class decks (class-1/2/3) reuse this exact block.
+   ============================================================ */
+:root{
+  --stage-bg:#07080f;
+  --bg:#07080f;
+  --panel:#10121f;
+  --violet:#8b5cf6;
+  --violet-soft:#a78bfa;
+  --cyan:#22d3ee;
+  --white:#eef0f8;
+  --ink:#eef0f8;
+  --dim:#a7aec4;
+  --dim-light:#6b7390;
+  --faint:#4a5068;
+  --line:#1c2035;
+  --amber:#fbbf24;
+  --red:#f87171;
+  --green:#34d399;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* === FIXED 16:9 STAGE (viewport-base.css) === */
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--slide-bg,#07080f);}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;background:var(--slide-bg,#07080f);}
+.slide.active,.slide.visible{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+.deck-controls{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;}
+@media print{
+  html,body{width:1920px;height:auto;overflow:visible;background:#07080f;}
+  .deck-viewport{position:static;overflow:visible;background:#07080f;}
+  .deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none;}
+  .slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always;}
+  .slide:last-child{break-after:auto;page-break-after:auto;}
+  .deck-controls{display:none!important;}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important;}}
+/* === END viewport-base.css === */
+
+body{font-family:'Space Grotesk',sans-serif;}
+.deck-stage{background:var(--bg);}
+.slide{background:var(--bg);}
+.slide::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 40% at 18% -5%, rgba(139,92,246,0.10), transparent),
+             radial-gradient(ellipse 50% 35% at 92% 6%, rgba(34,211,238,0.06), transparent);
+}
+
+.accent-edge{position:absolute;top:0;bottom:0;left:0;width:10px;background:linear-gradient(180deg,var(--violet),var(--cyan));z-index:45;}
+
+.deck-chrome-top{
+  position:absolute;top:0;left:0;right:0;height:80px;z-index:40;
+  display:flex;align-items:center;gap:14px;padding:0 64px 0 84px;
+  border-bottom:1px solid var(--line);
+  font-size:16px;font-weight:700;letter-spacing:1.5px;color:var(--dim-light);
+}
+.deck-chrome-top .sq{width:12px;height:12px;background:var(--violet);box-shadow:0 0 10px var(--violet);}
+.deck-chrome-top .hub-link{color:var(--white);text-decoration:none;font-weight:700;border:1px solid var(--line);padding:3px 12px;font-size:15px;letter-spacing:0.5px;text-transform:none;transition:background 0.15s ease, border-color 0.15s ease;}
+.deck-chrome-top .hub-link:hover{background:rgba(139,92,246,0.15);border-color:var(--violet);}
+.deck-chrome-top .path{color:var(--white);font-family:'JetBrains Mono',monospace;font-size:15px;}
+.deck-chrome-top .weekmeta{margin-left:auto;text-transform:uppercase;}
+
+.deck-chrome-bottom{
+  position:absolute;bottom:0;left:0;right:0;height:60px;z-index:40;
+  display:flex;align-items:center;padding:0 64px 0 84px;
+  font-size:15px;color:var(--dim-light);
+}
+.deck-chrome-bottom .counter{font-weight:700;color:var(--white);font-family:'JetBrains Mono',monospace;}
+.deck-chrome-bottom .hint{margin-left:auto;}
+.deck-chrome-bottom .hint kbd{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:2px 8px;margin:0 2px;color:var(--dim);}
+
+.progress-track{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--line);z-index:41;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));transition:width 0.3s ease;}
+
+.slide-inner{position:absolute;top:130px;left:150px;right:150px;bottom:110px;display:flex;flex-direction:column;}
+.slide.center .slide-inner{align-items:center;justify-content:center;text-align:center;}
+
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--violet-soft);margin-bottom:16px;}
+h2{font-weight:700;font-size:60px;letter-spacing:-1.5px;line-height:1.08;color:var(--white);margin-bottom:32px;}
+.slide p{font-size:27px;color:var(--dim);line-height:1.55;font-weight:400;}
+.slide strong{color:var(--white);font-weight:700;}
+.slide a{color:var(--cyan);}
+.slide code{font-family:'JetBrains Mono',monospace;font-size:0.92em;color:var(--cyan);}
+.subtitle{font-size:25px;color:var(--dim-light);margin-top:8px;font-weight:500;}
+.footnote{font-size:19px;color:var(--dim-light);margin-top:22px;}
+
+ul,ol{margin-left:38px;}
+.slide li{font-size:27px;color:var(--dim);line-height:1.5;margin-bottom:12px;font-weight:400;}
+ul.checklist{list-style:none;margin-left:0;}
+ul.checklist li{padding-left:34px;position:relative;}
+ul.checklist li::before{content:"\2192";color:var(--cyan);font-weight:700;position:absolute;left:0;}
+
+pre{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--violet);padding:28px 32px;margin-top:18px;overflow:hidden;}
+pre code{font-family:'JetBrains Mono',monospace;font-size:20px;line-height:1.48;color:#dfe3f2;white-space:pre;}
+.kw{color:var(--violet-soft);font-weight:700;}
+.str{color:var(--cyan);}
+.cm{color:#5b6178;font-style:italic;}
+
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:60px;}
+.columns h3{font-size:26px;font-weight:700;color:var(--violet-soft);margin-bottom:12px;}
+
+.callout{border-left:4px solid var(--violet);background:rgba(139,92,246,0.10);padding:22px 28px;margin-top:20px;font-size:24px;color:var(--white);font-weight:400;}
+.callout p{color:var(--white);}
+.callout--warning{border-left-color:var(--amber);background:rgba(251,191,36,0.08);}
+.callout--error{border-left-color:var(--red);background:rgba(248,113,113,0.08);}
+.callout--info{border-left-color:var(--cyan);background:rgba(34,211,238,0.08);}
+
+table{width:100%;border-collapse:collapse;margin-top:18px;font-size:22px;}
+th{background:var(--panel);color:var(--violet-soft);text-align:left;padding:13px 16px;font-weight:700;border-bottom:2px solid var(--violet);}
+td{border-top:1px solid var(--line);padding:13px 16px;color:var(--dim);}
+td strong{color:var(--white);}
+
+.pipeline{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin:28px 0;}
+.pipeline-step{background:var(--panel);border:1px solid var(--violet);color:var(--white);padding:16px 28px;font-size:24px;font-weight:700;}
+.pipeline-step.ghost{border-color:var(--line);color:var(--dim-light);}
+.pipeline-step.hot{background:rgba(139,92,246,0.2);box-shadow:0 0 18px rgba(139,92,246,0.35);}
+.pipeline-arrow{color:var(--cyan);font-size:30px;font-weight:700;}
+
+.qr-figure{text-align:center;margin-top:20px;}
+.qr-figure img{max-width:300px;border:2px solid var(--violet);padding:14px;background:#fff;}
+.qr-figure figcaption{margin-top:12px;font-size:19px;color:var(--dim-light);}
+
+.colab-btn{display:inline-block;background:var(--panel);color:var(--white)!important;font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:2px;padding:14px 36px;text-decoration:none!important;border:2px solid var(--cyan);}
+.colab-btn:hover{background:rgba(34,211,238,0.12);}
+
+/* title slide */
+.title-slide .panel-glow{position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 110%, rgba(139,92,246,0.28), transparent);}
+h1.hero-title{font-weight:700;font-size:104px;letter-spacing:-2px;line-height:1.05;color:var(--white);max-width:1550px;}
+h1.hero-title .split-word{color:var(--bg);background:linear-gradient(100deg,var(--violet),var(--cyan));padding:0 22px;display:inline-block;}
+.hero-sub{margin-top:28px;font-size:26px;font-weight:400;color:var(--dim-light);max-width:1000px;}
+.stat-block{position:absolute;right:96px;bottom:96px;display:flex;gap:56px;z-index:2;}
+.stat{text-align:right;}
+.stat .num{font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:var(--cyan);line-height:1;}
+.stat .label{margin-top:6px;font-size:15px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim-light);}
+
+.slide .r{opacity:0;transform:translateY(18px);transition:opacity 0.5s ease-out, transform 0.5s ease-out;}
+.slide.active .r{opacity:1;transform:translateY(0);}
+.slide .r:nth-child(1){transition-delay:0.05s;}
+.slide .r:nth-child(2){transition-delay:0.15s;}
+.slide .r:nth-child(3){transition-delay:0.25s;}
+.slide .r:nth-child(4){transition-delay:0.35s;}
+.slide .r:nth-child(5){transition-delay:0.45s;}
+
+/* vector-space toy diagram */
+.vspace{display:flex;gap:60px;align-items:center;margin-top:10px;}
+.vspace svg{flex:0 0 760px;background:var(--panel);border:1px solid var(--line);}
+.vspace .legend{font-size:24px;color:var(--dim);}
+.vspace .legend div{margin-bottom:14px;}
+.dot-l{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:12px;}
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
+    <div class="accent-edge"></div>
+    <div class="deck-chrome-top"><span class="sq"></span><a class="hub-link" href="index.html">&larr; Hub</a><span class="path">week-3/class-1</span><span class="weekmeta">Week 3 · Class 1</span></div>
+
+    <!-- 1 -->
+    <section class="slide active title-slide">
+      <div class="panel-glow"></div>
+      <div class="slide-inner">
+        <p class="eyebrow r">Latent Space</p>
+        <div class="r"><h1 class="hero-title">Embeddings:<br>Meaning as <span class="split-word">Numbers</span></h1></div>
+        <p class="hero-sub r">Week 3 · Class 1 · From text chunks to vectors you can search by meaning</p>
+      </div>
+      <div class="stat-block r">
+        <div class="stat"><div class="num">384</div><div class="label">Dimensions</div></div>
+        <div class="stat"><div class="num">01</div><div class="label">Search engine built</div></div>
+      </div>
+    </section>
+
+    <!-- 2: roadmap -->
+    <section class="slide">
+      <iframe src="roadmap.html?embed=1" style="position:absolute;inset:0;width:1920px;height:1080px;border:0;" title="Course roadmap infographic"></iframe>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Where Your Chunks Are Waiting</h2>
+      <div class="pipeline r">
+        <span class="pipeline-step ghost">Scrape / PDF ✓</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step ghost">Clean text ✓</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step ghost">Chunk ✓</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step hot">Embed ← today</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Store &amp; retrieve</span>
+      </div>
+      <p class="r">In Week 2 you scraped blogs, parsed PDFs, and cut everything into <code>data/chunks.json</code>. Your <code>docs</code> node can answer from <strong>one hardcoded chunk</strong> — it has no way to pick the <em>right</em> chunk for a question.</p>
+      <div class="callout r"><p>This week's mission: given any question, <strong>find the chunks that mean the same thing</strong> — even when they share no words.</p></div>
+    </div></section>
+
+    <!-- 4 -->
+    <section class="slide center"><div class="slide-inner">
+      <h2 class="r">Follow Along in Colab</h2>
+      <p class="subtitle r">week3_embeddings_foundations.ipynb — every demo in this deck runs there</p>
+      <p class="r" style="margin-top:24px;"><a class="colab-btn" href="https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-3/notebooks/week3_embeddings_foundations.ipynb" target="_blank" rel="noopener">Open in Colab</a></p>
+      <figure class="qr-figure r"><img src="../assets/images/qr-codes/week3-class-1.png" alt="QR code for Week 3 Class 1 notebook"></figure>
+    </div></section>
+
+    <!-- 5 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Why Keyword Search Fails</h2>
+      <div class="columns r">
+        <div>
+          <h3>User asks</h3>
+          <p>"How much does it cost to <strong>fix my car</strong>?"</p>
+        </div>
+        <div>
+          <h3>Your document says</h3>
+          <p>"<strong>Automobile repair</strong> pricing starts at £80 per hour."</p>
+        </div>
+      </div>
+      <table class="r">
+        <thead><tr><th>Search type</th><th>Match?</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Keyword (<code>"car" in text</code>)</td><td><strong style="color:var(--red)">✗ Miss</strong></td><td>Zero shared words: car≠automobile, fix≠repair, cost≠pricing</td></tr>
+          <tr><td>Semantic (embeddings)</td><td><strong style="color:var(--green)">✓ Hit</strong></td><td>The <em>meanings</em> are nearly identical</td></tr>
+        </tbody>
+      </table>
+      <p class="footnote r">Synonyms, typos, paraphrases, other languages — keyword search misses them all.</p>
+    </div></section>
+
+    <!-- 6 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">What Is an Embedding?</h2>
+      <p class="r">An embedding is a <strong>fixed-length list of numbers</strong> that represents the <strong>meaning</strong> of a piece of text.</p>
+      <pre class="r"><code class="language-python">"I love pizza"      →  [ 0.12, -0.87, 0.44, ..., 0.03]   # 384 numbers
+"Pizza is amazing"  →  [ 0.10, -0.85, 0.47, ..., 0.05]   # nearly the same!
+"Tax law reform"    →  [-0.71,  0.22, -0.90, ..., 0.66]   # far away</code></pre>
+      <ul class="r">
+        <li><strong>Same size for any input</strong> — a word, a sentence, a whole chunk → always 384 numbers</li>
+        <li><strong>Similar meaning → nearby vectors</strong> — that's the property everything else builds on</li>
+        <li>Produced by a neural network trained on billions of sentence pairs</li>
+      </ul>
+    </div></section>
+
+    <!-- 7 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Meaning Is Geometry</h2>
+      <div class="vspace r">
+        <svg viewBox="0 0 760 460" role="img" aria-label="2D vector space with clustered points">
+          <line x1="60" y1="410" x2="720" y2="410" stroke="#4a5068" stroke-width="2"/>
+          <line x1="60" y1="410" x2="60" y2="30" stroke="#4a5068" stroke-width="2"/>
+          <text x="690" y="440" fill="#6b7390" font-size="18" font-family="JetBrains Mono">dim 1</text>
+          <text x="20" y="50" fill="#6b7390" font-size="18" font-family="JetBrains Mono">dim 2</text>
+          <!-- food cluster -->
+          <circle cx="180" cy="120" r="9" fill="#34d399"/><text x="198" y="126" fill="#a7aec4" font-size="19">pizza</text>
+          <circle cx="228" cy="88"  r="9" fill="#34d399"/><text x="246" y="94" fill="#a7aec4" font-size="19">pasta</text>
+          <circle cx="150" cy="175" r="9" fill="#34d399"/><text x="168" y="181" fill="#a7aec4" font-size="19">sushi</text>
+          <!-- sports cluster -->
+          <circle cx="530" cy="140" r="9" fill="#22d3ee"/><text x="548" y="146" fill="#a7aec4" font-size="19">football</text>
+          <circle cx="575" cy="105" r="9" fill="#22d3ee"/><text x="593" y="111" fill="#a7aec4" font-size="19">World Cup</text>
+          <circle cx="500" cy="185" r="9" fill="#22d3ee"/><text x="518" y="191" fill="#a7aec4" font-size="19">goalkeeper</text>
+          <!-- python cluster -->
+          <circle cx="330" cy="330" r="9" fill="#8b5cf6"/><text x="348" y="336" fill="#a7aec4" font-size="19">Python 3.13</text>
+          <circle cx="390" cy="365" r="9" fill="#8b5cf6"/><text x="408" y="371" fill="#a7aec4" font-size="19">list comprehension</text>
+          <circle cx="250" cy="400" r="9" fill="#8b5cf6"/><text x="268" y="406" fill="#a7aec4" font-size="19">pip install</text>
+          <!-- query -->
+          <circle cx="575" cy="105" r="16" fill="none" stroke="#fbbf24" stroke-width="3" stroke-dasharray="6 5"/>
+          <text x="330" y="60" fill="#fbbf24" font-size="19" font-weight="bold">query: "who won the final?"</text>
+          <line x1="545" y1="66" x2="568" y2="92" stroke="#fbbf24" stroke-width="2"/>
+        </svg>
+        <div class="legend">
+          <div><span class="dot-l" style="background:#34d399"></span>Food texts cluster together</div>
+          <div><span class="dot-l" style="background:#22d3ee"></span>Sports texts cluster together</div>
+          <div><span class="dot-l" style="background:#8b5cf6"></span>Python texts cluster together</div>
+          <div><span class="dot-l" style="border:2px dashed #fbbf24"></span>A query <strong>lands inside</strong> the cluster that answers it</div>
+        </div>
+      </div>
+      <p class="footnote r">Real embeddings live in 384-D, not 2-D — same idea, more room for nuance.</p>
+    </div></section>
+
+    <!-- 8 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">A Very Short History</h2>
+      <table class="r">
+        <thead><tr><th>Era</th><th>Approach</th><th>Limitation</th></tr></thead>
+        <tbody>
+          <tr><td>2013 — word2vec</td><td>One vector per <strong>word</strong>; king − man + woman ≈ queen</td><td>"bank" (river) = "bank" (money)</td></tr>
+          <tr><td>2018 — BERT</td><td>Context-aware word vectors from transformers</td><td>Slow to compare whole sentences</td></tr>
+          <tr><td>2019 — Sentence-BERT</td><td>One vector per <strong>sentence/paragraph</strong>, trained for similarity</td><td>— this is what we use</td></tr>
+          <tr><td>Today — API embedders</td><td>OpenAI, Cohere, Voyage, Jina… same idea, hosted</td><td>Cost per token, network dependency</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><p>We use <strong>sentence-transformers</strong> — free, open-source, runs in Colab, no API key.</p></div>
+    </div></section>
+
+    <!-- 9 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 3</p>
+      <h2 class="r">Your First Embedding</h2>
+      <pre class="r"><code class="language-python">!pip install -q sentence-transformers
+
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("all-MiniLM-L6-v2")   # 80 MB, downloads once
+
+vec = model.encode("I love pizza")
+print(type(vec), vec.shape)    # &lt;class 'numpy.ndarray'&gt; (384,)
+print(vec[:5])                 # [ 0.0623 -0.0403  0.0577  0.0616 -0.0577]</code></pre>
+      <ul class="r">
+        <li><code>all-MiniLM-L6-v2</code> — the workhorse: fast, small, good quality, <strong>384 dims</strong></li>
+        <li>Any text in → always a <code>(384,)</code> NumPy array out</li>
+      </ul>
+    </div></section>
+
+    <!-- 10 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">How Close Are Two Vectors?</h2>
+      <table class="r">
+        <thead><tr><th>Metric</th><th>Formula</th><th>Intuition</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Dot product</strong></td><td><code>Σ aᵢ·bᵢ</code></td><td>Alignment × magnitude</td></tr>
+          <tr><td><strong>Cosine similarity</strong></td><td><code>a·b / (‖a‖‖b‖)</code></td><td><strong>Angle only</strong> — ignores length. 1 = same direction, 0 = unrelated</td></tr>
+          <tr><td><strong>Euclidean (L2)</strong></td><td><code>‖a − b‖</code></td><td>Straight-line distance — smaller = closer</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><p><strong>Cosine is the default for text.</strong> Bonus: if you normalize vectors to length 1, cosine = dot product — vector DBs exploit this for speed.</p></div>
+    </div></section>
+
+    <!-- 11 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Cosine by Hand — 2-D Warm-up</h2>
+      <div class="columns r">
+        <div>
+          <pre style="margin-top:0;"><code class="language-python">a = [3, 4]      # "pizza"
+b = [4, 3]      # "pasta"
+c = [-4, 3]     # "tax law"
+
+dot(a,b) = 3·4 + 4·3 = 24
+‖a‖ = 5,  ‖b‖ = 5
+
+cos(a,b) = 24 / 25 = 0.96   # close!
+cos(a,c) = 0 / 25  = 0.00   # unrelated</code></pre>
+        </div>
+        <div>
+          <h3>In NumPy</h3>
+          <pre style="margin-top:0;"><code class="language-python">import numpy as np
+
+def cosine(a, b):
+    return np.dot(a, b) / (
+        np.linalg.norm(a) *
+        np.linalg.norm(b)
+    )</code></pre>
+          <p style="margin-top:18px;font-size:23px;">You'll compute one by hand in the notebook before NumPy does it for you.</p>
+        </div>
+      </div>
+    </div></section>
+
+    <!-- 12 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 5</p>
+      <h2 class="r">Similarity Matrix — See Meaning Cluster</h2>
+      <pre class="r"><code class="language-python">sentences = [
+    "I love pizza",             "Pizza is my favorite food",
+    "The World Cup final",      "Football is popular in Brazil",
+    "Python is a language",     "I write code in Python",
+]
+embs = model.encode(sentences, normalize_embeddings=True)
+sim = embs @ embs.T            # normalized → dot = cosine
+
+# pandas heatmap: food pairs ≈ 0.7+, cross-topic pairs ≈ 0.1</code></pre>
+      <p class="r">The matrix shows <strong>blocks</strong>: food×food bright, sports×sports bright, food×sports dark. Meaning became measurable.</p>
+    </div></section>
+
+    <!-- 13 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 6</p>
+      <h2 class="r">Semantic Search in 15 Lines</h2>
+      <pre class="r"><code class="language-python">corpus_embs = model.encode(chunks, normalize_embeddings=True)   # (N, 384)
+
+def search(query: str, k: int = 3):
+    q = model.encode(query, normalize_embeddings=True)          # (384,)
+    scores = corpus_embs @ q                                    # (N,) cosine
+    top = np.argsort(scores)[::-1][:k]
+    return [(chunks[i], float(scores[i])) for i in top]
+
+for text, score in search("footballer who scored in the final"):
+    print(f"{score:.3f}  {text[:80]}")</code></pre>
+      <p class="r">Embed once, search many times. This is the <strong>heart of every RAG system</strong> — everything after this is scaling and plumbing.</p>
+    </div></section>
+
+    <!-- 14 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 7</p>
+      <h2 class="r">Now on YOUR Week 2 Data</h2>
+      <ul class="checklist r">
+        <li>Load <code>data/chunks.json</code> (PDF chunks) and your scraped JSON datasets</li>
+        <li>Embed every chunk — one <code>model.encode(list)</code> call, batched automatically</li>
+        <li>Ask questions your dataset can answer — and some it can't</li>
+        <li>Inspect the scores: what does 0.75 vs 0.30 <em>feel</em> like?</li>
+      </ul>
+      <div class="callout callout--info r"><p>No Week 2 data at hand? The notebook ships a fallback corpus so every cell still runs.</p></div>
+    </div></section>
+
+    <!-- 15 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 8</p>
+      <h2 class="r">Seeing 384-D in 2-D</h2>
+      <pre class="r"><code class="language-python">from sklearn.decomposition import PCA
+
+coords = PCA(n_components=2).fit_transform(all_embs)   # (N, 2)
+
+plt.scatter(coords[:, 0], coords[:, 1], c=topic_colors)
+# food / sports / python sentences land in separate islands</code></pre>
+      <p class="r">PCA squashes 384 dimensions to 2 so we can plot. Clusters you <em>predicted</em> become clusters you can <strong>see</strong>.</p>
+      <p class="footnote r">t-SNE / UMAP give prettier plots for big corpora — PCA is enough to build intuition.</p>
+    </div></section>
+
+    <!-- 16 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">What Embeddings Are Bad At</h2>
+      <table class="r">
+        <thead><tr><th>Weakness</th><th>Example</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Negation</strong></td><td>"pizza is great" ≈ "pizza is NOT great"</td><td>LLM re-reads retrieved text anyway</td></tr>
+          <tr><td><strong>Exact identifiers</strong></td><td>Order #48291, SKU codes, names</td><td>Keyword/hybrid search (Week 4)</td></tr>
+          <tr><td><strong>Numbers &amp; math</strong></td><td>"under £50" won't filter prices</td><td>Metadata filters (Class 3)</td></tr>
+          <tr><td><strong>Freshness</strong></td><td>Model froze at training time</td><td>You embed <em>your</em> current docs — that's the point of RAG</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout--warning r"><p>Similar direction ≠ same truth value. Embeddings find <strong>relevant</strong> text; the LLM still does the reading.</p></div>
+    </div></section>
+
+    <!-- 17 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Homework</h2>
+      <ol class="r">
+        <li><strong>Hand-cosine</strong> — finish the pen-and-paper exercise in Section 4 (two 3-D vectors)</li>
+        <li><strong>Break the search engine</strong> — find 3 queries where semantic search returns a <em>wrong</em> top-1 on your data; write one sentence each on why</li>
+        <li><strong>Cross-lingual probe</strong> — embed the same sentence in English + your language with <code>paraphrase-multilingual-MiniLM-L12-v2</code>; report the cosine</li>
+        <li><strong>Stretch:</strong> plot your entire Week 2 chunk set with PCA, colored by source (blog / wiki / PDF)</li>
+      </ol>
+    </div></section>
+
+    <!-- 18 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Next Class: The Scale Problem</h2>
+      <p class="r">Our NumPy search compares the query against <strong>every</strong> vector. Fine for 200 chunks…</p>
+      <table class="r">
+        <thead><tr><th>Corpus</th><th>Vectors</th><th>Brute-force feasible?</th></tr></thead>
+        <tbody>
+          <tr><td>Your Week 2 dataset</td><td>~200</td><td>✓ instant</td></tr>
+          <tr><td>Company wiki</td><td>~500K</td><td>△ seconds per query</td></tr>
+          <tr><td>Web-scale corpus</td><td>1B+</td><td>✗ forget it</td></tr>
+        </tbody>
+      </table>
+      <p class="r" style="margin-top:20px;">Class 2: <strong>FAISS</strong> — indexes that trade a sliver of accuracy for 100× speed.</p>
+    </div></section>
+
+    <!-- 19 -->
+    <section class="slide center"><div class="slide-inner">
+      <h2 class="r">Class 1 Complete</h2>
+      <ul class="checklist r" style="display:inline-block;text-align:left;">
+        <li>Embedding = meaning as a fixed-length vector</li>
+        <li>Cosine similarity — computed by hand and with NumPy</li>
+        <li>A working semantic search engine over your own chunks</li>
+        <li>Clusters seen with your own eyes via PCA</li>
+      </ul>
+      <p class="subtitle r" style="margin-top:24px;">Next: vector search at scale with FAISS</p>
+    </div></section>
+
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 19</span><span class="hint">Nav <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>Space</kbd></span></div>
+  </main>
+</div>
+
+<script>
+class SlidePresentation{
+  constructor(){
+    this.slides=document.querySelectorAll('.slide');
+    this.current=0;
+    this.stage=document.getElementById('deckStage');
+    this.counter=document.getElementById('slideCounter');
+    this.fill=document.getElementById('progressFill');
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.showSlide(0);
+  }
+  setupStageScale(){
+    const scale=()=>{
+      const f=Math.min(window.innerWidth/1920, window.innerHeight/1080);
+      const x=(window.innerWidth-1920*f)/2;
+      const y=(window.innerHeight-1080*f)/2;
+      this.stage.style.transform=`translate(${x}px, ${y}px) scale(${f})`;
+    };
+    scale();
+    window.addEventListener('resize', scale);
+  }
+  setupKeyboardNav(){
+    document.addEventListener('keydown', (e)=>{
+      if(e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+      if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ this.next(); e.preventDefault(); }
+      if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ this.prev(); e.preventDefault(); }
+    });
+  }
+  setupTouchNav(){
+    let sx=0;
+    document.addEventListener('touchstart', (e)=>{ sx=e.touches[0].clientX; });
+    document.addEventListener('touchend', (e)=>{
+      const dx=e.changedTouches[0].clientX-sx;
+      if(dx<-50) this.next();
+      if(dx>50) this.prev();
+    });
+    document.addEventListener('wheel', (e)=>{
+      if(Math.abs(e.deltaY)<30) return;
+      if(e.deltaY>0) this.next(); else this.prev();
+    }, {passive:true});
+  }
+  showSlide(i){
+    this.current=Math.max(0, Math.min(i, this.slides.length-1));
+    this.slides.forEach((s,idx)=>{
+      s.classList.toggle('active', idx===this.current);
+      s.classList.toggle('visible', idx===this.current);
+    });
+    if(this.counter) this.counter.textContent = String(this.current+1).padStart(2,'0')+' / '+String(this.slides.length).padStart(2,'0');
+    if(this.fill) this.fill.style.width = ((this.current+1)/this.slides.length*100)+'%';
+  }
+  next(){ this.showSlide(this.current+1); }
+  prev(){ this.showSlide(this.current-1); }
+}
+
+function highlightCode(){
+  document.querySelectorAll('pre code').forEach((block)=>{
+    const raw=block.textContent;
+    const esc=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const kws='def|return|import|from|if|elif|else|for|while|in|True|False|None|class|try|except|as|break|continue|and|or|not|with|lambda';
+    const pattern=new RegExp('(#.*$)|("""[\\s\\S]*?"""|\'\'\'[\\s\\S]*?\'\'\'|"[^"\\n]*"|\'[^\'\\n]*\')|\\b('+kws+')\\b','gm');
+    block.innerHTML = esc.replace(pattern, (m, cm, str, kw)=>{
+      if(cm) return '<span class="cm">'+cm+'</span>';
+      if(str) return '<span class="str">'+str+'</span>';
+      if(kw) return '<span class="kw">'+kw+'</span>';
+      return m;
+    });
+  });
+}
+
+class InlineEditor{
+  constructor(storageKey){
+    this.storageKey=storageKey;
+    this.isActive=false;
+    this.restore();
+  }
+  restore(){
+    const saved=localStorage.getItem(this.storageKey);
+    if(!saved) return;
+    try{
+      const data=JSON.parse(saved);
+      document.querySelectorAll('.slide').forEach((s,i)=>{ if(data[i]!==undefined) s.innerHTML=data[i]; });
+    }catch(e){}
+  }
+  save(){
+    const data=Array.from(document.querySelectorAll('.slide')).map(s=>s.innerHTML);
+    localStorage.setItem(this.storageKey, JSON.stringify(data));
+  }
+  toggleEditMode(){
+    this.isActive=!this.isActive;
+    document.querySelectorAll('.slide h1,.slide h2,.slide h3,.slide p,.slide li,.slide span').forEach(el=>{
+      el.setAttribute('contenteditable', this.isActive ? 'true':'false');
+    });
+    document.getElementById('editToggle').classList.toggle('active', this.isActive);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  highlightCode();
+  window.deck = new SlidePresentation();
+
+  const editor = new InlineEditor('deck-edits::week3-class1');
+  const hotzone=document.querySelector('.edit-hotzone');
+  const editToggle=document.getElementById('editToggle');
+  let hideTimeout=null;
+  if(hotzone && editToggle){
+    editToggle.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('mouseenter', ()=>{clearTimeout(hideTimeout); editToggle.classList.add('show');});
+    hotzone.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+    editToggle.addEventListener('mouseenter', ()=>clearTimeout(hideTimeout));
+    editToggle.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+  }
+  document.addEventListener('keydown', (e)=>{
+    if((e.key==='e'||e.key==='E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable')==='true')){ editor.toggleEditMode(); }
+    if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); editor.save(); }
+  });
+});
+</script>
+
+<div class="edit-hotzone" style="position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)" style="position:fixed;top:12px;left:12px;z-index:10001;opacity:0;pointer-events:none;transition:opacity 0.3s ease;background:var(--panel);border:1px solid var(--violet);color:var(--white);font-size:18px;padding:8px 12px;">&#9998;</button>
+<style>
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+</style>
+</body>
+</html>

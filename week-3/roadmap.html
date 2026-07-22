@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap — How We Got Here</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080f;
+  --violet:#8b5cf6;
+  --cyan:#22d3ee;
+  --amber:#fbbf24;
+  --dim:#8890a8;
+  --white:#eef0f8;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Space Grotesk',sans-serif;}
+canvas{display:block;position:fixed;inset:0;}
+.chrome{
+  position:fixed;top:0;left:0;right:0;z-index:10;
+  display:flex;align-items:center;gap:14px;
+  padding:18px 28px;font-size:13px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--dim);font-weight:500;
+}
+.chrome a{color:var(--cyan);text-decoration:none;font-weight:700;}
+.chrome a:hover{text-decoration:underline;}
+.chrome .dot{width:8px;height:8px;background:var(--violet);border-radius:50%;box-shadow:0 0 12px var(--violet);}
+.hint{
+  position:fixed;bottom:16px;left:0;right:0;z-index:10;text-align:center;
+  font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#4a5068;
+}
+.hint kbd{border:1px solid #2a3050;border-radius:4px;padding:1px 7px;color:var(--dim);font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div class="chrome"><span class="dot"></span><a href="index.html">&larr; Week 3 Hub</a><span>LF Connect · Bootcamp Roadmap</span></div>
+<p class="hint"><kbd>R</kbd> replay animation &nbsp;·&nbsp; hover a node to spotlight it</p>
+
+<script>
+'use strict';
+// Embedded inside a class deck? Hide our own chrome — the deck provides its own.
+if (new URLSearchParams(location.search).has('embed')) {
+  document.querySelector('.chrome').style.display = 'none';
+  document.querySelector('.hint').style.display = 'none';
+}
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+
+const COL = {
+  bg: '#07080f',
+  violet: '#8b5cf6',
+  cyan: '#22d3ee',
+  amber: '#fbbf24',
+  green: '#34d399',
+  dim: '#8890a8',
+  faint: '#3a4060',
+  white: '#eef0f8',
+};
+
+// ---- the journey ----------------------------------------------------------
+const WEEKS = [
+  {
+    tag: 'WEEK 1',
+    title: 'Talking to an LLM',
+    color: COL.green,
+    done: true,
+    items: [
+      'Chatbot foundations & pipeline',
+      'Groq API — first "Hello Chatbot"',
+      'System prompts & personalities',
+      'Gradio chat UI assignment',
+    ],
+    lesson: 'A chatbot is messages in, message out.',
+  },
+  {
+    tag: 'WEEK 2',
+    title: 'Structure & Agents',
+    color: COL.cyan,
+    done: true,
+    items: [
+      'Prompt engineering (CoT, CO-STAR)',
+      'LangChain chains + tool agents',
+      'LangGraph agent: chat / calc / research / docs',
+      'Data collection: scraping, PDFs, chunking',
+    ],
+    lesson: 'Agents route; chunks wait for meaning.',
+  },
+  {
+    tag: 'WEEK 3',
+    title: 'Embeddings & Vectors',
+    color: COL.violet,
+    here: true,
+    items: [
+      'Text → vectors: meaning as geometry',
+      'Cosine similarity & semantic search',
+      'FAISS: fast vector indexes',
+      'Qdrant + retrieval-enabled agent',
+    ],
+    lesson: 'Your chunks finally become searchable meaning.',
+  },
+  {
+    tag: 'WEEK 4',
+    title: 'Full RAG Showcase',
+    color: COL.amber,
+    future: true,
+    items: [
+      'RAG & hybrid retrieval',
+      'Source citation & evaluation',
+      'Gradio final chatbot',
+      'Demo day 🎓',
+    ],
+    lesson: 'Everything converges into one bot.',
+  },
+];
+
+// ---- layout / state -------------------------------------------------------
+let W = 0, H = 0, DPR = 1;
+let t0 = performance.now();
+let hovered = -1;
+let particles = [];
+const mouse = { x: -9999, y: -9999 };
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  seedParticles();
+}
+
+// drifting "embedding points" backdrop — loose clusters, like a 2-D projection
+function seedParticles() {
+  particles = [];
+  const clusters = 5;
+  for (let c = 0; c < clusters; c++) {
+    const cx = (0.12 + 0.76 * Math.random()) * W;
+    const cy = (0.12 + 0.76 * Math.random()) * H;
+    const n = 14 + Math.floor(Math.random() * 10);
+    for (let i = 0; i < n; i++) {
+      particles.push({
+        x: cx + (Math.random() - 0.5) * W * 0.14,
+        y: cy + (Math.random() - 0.5) * H * 0.14,
+        vx: (Math.random() - 0.5) * 0.12,
+        vy: (Math.random() - 0.5) * 0.12,
+        r: 1 + Math.random() * 1.6,
+        c,
+      });
+    }
+  }
+}
+
+function nodePositions() {
+  // gentle S-curve across the screen
+  const pad = Math.max(90, W * 0.09);
+  const usable = W - pad * 2;
+  const midY = H * 0.46;
+  const amp = Math.min(H * 0.10, 90);
+  return WEEKS.map((_, i) => {
+    const f = WEEKS.length === 1 ? 0 : i / (WEEKS.length - 1);
+    return {
+      x: pad + usable * f,
+      y: midY + Math.sin(f * Math.PI * 1.5 - 0.4) * amp,
+    };
+  });
+}
+
+function pathPoint(pts, u) {
+  // Catmull-Rom-ish sampling along the polyline with smoothing
+  const seg = Math.min(pts.length - 2, Math.max(0, Math.floor(u * (pts.length - 1))));
+  const lu = u * (pts.length - 1) - seg;
+  const p0 = pts[Math.max(0, seg - 1)], p1 = pts[seg], p2 = pts[Math.min(pts.length - 1, seg + 1)], p3 = pts[Math.min(pts.length - 1, seg + 2)];
+  const t = lu, t2 = t * t, t3 = t2 * t;
+  return {
+    x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+    y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+  };
+}
+
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+function ease(x) { return x < 0 ? 0 : x > 1 ? 1 : 1 - Math.pow(1 - x, 3); }
+
+// ---- draw -----------------------------------------------------------------
+function draw(now) {
+  const t = (now - t0) / 1000;           // seconds since (re)start
+  ctx.clearRect(0, 0, W, H);
+
+  // background particles + faint neighbor links
+  const pcols = [COL.green, COL.cyan, COL.violet, COL.amber, COL.dim];
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < -20) p.x = W + 20; if (p.x > W + 20) p.x = -20;
+    if (p.y < -20) p.y = H + 20; if (p.y > H + 20) p.y = -20;
+  }
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const a = particles[i], b = particles[j];
+      if (a.c !== b.c) continue;
+      const dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
+      if (d2 < 5200) {
+        ctx.strokeStyle = hexA(pcols[a.c % pcols.length], 0.10 * (1 - d2 / 5200));
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+    }
+  }
+  for (const p of particles) {
+    ctx.fillStyle = hexA(pcols[p.c % pcols.length], 0.28);
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // headline
+  const titleIn = ease(t / 0.8);
+  ctx.textAlign = 'center';
+  ctx.globalAlpha = titleIn;
+  ctx.fillStyle = COL.dim;
+  ctx.font = `500 ${Math.max(11, W * 0.008)}px 'JetBrains Mono', monospace`;
+  ctx.fillText('B A S I C   C H A T   →   A G E N T S   →   V E C T O R S   →   R A G', W / 2, H * 0.115);
+  ctx.fillStyle = COL.white;
+  ctx.font = `700 ${Math.max(26, W * 0.026)}px 'Space Grotesk', sans-serif`;
+  ctx.fillText('How We Got Here', W / 2, H * 0.115 + Math.max(34, W * 0.033));
+  ctx.globalAlpha = 1;
+
+  const pts = nodePositions();
+
+  // spine path — draws itself over ~2.4s
+  const drawn = ease((t - 0.5) / 2.4);
+  if (drawn > 0) {
+    ctx.save();
+    const grad = ctx.createLinearGradient(pts[0].x, 0, pts[pts.length - 1].x, 0);
+    grad.addColorStop(0, COL.green); grad.addColorStop(0.36, COL.cyan);
+    grad.addColorStop(0.68, COL.violet); grad.addColorStop(1, COL.amber);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = hexA(COL.violet, 0.5); ctx.shadowBlur = 10;
+    ctx.beginPath();
+    const steps = 140;
+    for (let s = 0; s <= steps * drawn; s++) {
+      const p = pathPoint(pts, s / steps);
+      s === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // traveling spark on the finished path
+    if (drawn >= 1) {
+      const u = (t * 0.12) % 1;
+      const sp = pathPoint(pts, u);
+      ctx.fillStyle = COL.white;
+      ctx.shadowColor = COL.cyan; ctx.shadowBlur = 14;
+      ctx.beginPath(); ctx.arc(sp.x, sp.y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // week nodes + cards
+  hovered = -1;
+  pts.forEach((p, i) => {
+    const wk = WEEKS[i];
+    const appear = ease((t - 0.9 - i * 0.55) / 0.6);
+    if (appear <= 0) return;
+
+    const dx = mouse.x - p.x, dy = mouse.y - p.y;
+    const near = Math.sqrt(dx * dx + dy * dy) < 150;
+    if (near) hovered = i;
+
+    // node
+    const pulse = wk.here ? 1 + Math.sin(t * 3) * 0.18 : 1;
+    const R = (wk.here ? 13 : 9) * pulse * appear;
+    ctx.save();
+    ctx.globalAlpha = appear;
+    if (wk.here) {
+      ctx.strokeStyle = hexA(wk.color, 0.5);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, R + 9 + Math.sin(t * 3) * 3, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.fillStyle = wk.color;
+    ctx.shadowColor = wk.color; ctx.shadowBlur = wk.here ? 22 : 10;
+    ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    if (wk.done) { // checkmark
+      ctx.strokeStyle = COL.bg; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p.x - 3.6, p.y + 0.4); ctx.lineTo(p.x - 1, p.y + 3.4); ctx.lineTo(p.x + 4, p.y - 3);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // card above/below alternating
+    const above = i % 2 === 0;
+    const cw = Math.min(300, Math.max(220, W / 4.6));
+    const lineH = 19;
+    const ch = 96 + wk.items.length * lineH;
+    const cx = Math.max(14, Math.min(W - cw - 14, p.x - cw / 2));
+    const cy = above ? p.y - ch - 34 : p.y + 34;
+    const spot = near ? 1 : 0.82;
+
+    ctx.save();
+    ctx.globalAlpha = appear * spot;
+
+    // connector
+    ctx.strokeStyle = hexA(wk.color, 0.4);
+    ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(p.x, above ? p.y - 16 : p.y + 16);
+    ctx.lineTo(p.x, above ? cy + ch : cy); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // panel
+    ctx.fillStyle = near ? 'rgba(16,18,32,0.96)' : 'rgba(13,15,26,0.88)';
+    ctx.strokeStyle = hexA(wk.color, near ? 0.9 : 0.4);
+    ctx.lineWidth = near ? 1.6 : 1;
+    ctx.beginPath();
+    ctx.roundRect(cx, cy, cw, ch, 10);
+    ctx.fill(); ctx.stroke();
+
+    ctx.textAlign = 'left';
+    // tag + status
+    ctx.font = `700 11px 'JetBrains Mono', monospace`;
+    ctx.fillStyle = wk.color;
+    ctx.fillText(wk.tag, cx + 16, cy + 24);
+    const status = wk.here ? '● YOU ARE HERE' : wk.done ? '✓ COMPLETE' : '○ NEXT UP';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = wk.here ? wk.color : COL.faint;
+    ctx.fillText(status, cx + cw - 16, cy + 24);
+
+    // title
+    ctx.textAlign = 'left';
+    ctx.fillStyle = COL.white;
+    ctx.font = `700 17px 'Space Grotesk', sans-serif`;
+    ctx.fillText(wk.title, cx + 16, cy + 48);
+
+    // items
+    ctx.font = `400 12.5px 'Space Grotesk', sans-serif`;
+    wk.items.forEach((it, k) => {
+      ctx.fillStyle = hexA(wk.color, 0.9);
+      ctx.fillText('›', cx + 16, cy + 70 + k * lineH);
+      ctx.fillStyle = near ? COL.white : COL.dim;
+      ctx.fillText(it, cx + 28, cy + 70 + k * lineH);
+    });
+
+    // lesson line
+    ctx.fillStyle = hexA(wk.color, 0.75);
+    ctx.font = `italic 400 11.5px 'Space Grotesk', sans-serif`;
+    ctx.fillText(wk.lesson, cx + 16, cy + ch - 12);
+    ctx.restore();
+  });
+
+  // footer strip: the running pipeline metaphor
+  const stripIn = ease((t - 3.2) / 0.8);
+  if (stripIn > 0) {
+    ctx.save();
+    ctx.globalAlpha = stripIn;
+    ctx.textAlign = 'center';
+    ctx.font = `400 ${Math.max(12, W * 0.0095)}px 'JetBrains Mono', monospace`;
+    const seq = [
+      ['"hello"', COL.green], ['→', COL.faint],
+      ['route(intent)', COL.cyan], ['→', COL.faint],
+      ['[0.12, -0.87, …]', COL.violet], ['→', COL.faint],
+      ['retrieve + generate', COL.amber],
+    ];
+    const widths = seq.map(s => ctx.measureText(s[0]).width + 18);
+    const total = widths.reduce((a, b) => a + b, 0);
+    let x = W / 2 - total / 2;
+    const y = H * 0.90;
+    ctx.textAlign = 'left';
+    seq.forEach((s, i) => { ctx.fillStyle = s[1]; ctx.fillText(s[0], x, y); x += widths[i]; });
+    ctx.restore();
+  }
+
+  canvas.style.cursor = hovered >= 0 ? 'pointer' : 'default';
+  requestAnimationFrame(draw);
+}
+
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+window.addEventListener('keydown', e => { if (e.key === 'r' || e.key === 'R') t0 = performance.now(); });
+resize();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

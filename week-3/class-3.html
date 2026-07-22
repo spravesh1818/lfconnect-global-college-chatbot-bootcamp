@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class 3 — Qdrant & the Retrieval-Enabled Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   LATENT SPACE DECK ENGINE — Week 3 shared theme
+   Deep navy-black, violet + cyan accents, Space Grotesk + JetBrains Mono.
+   All Week 3 class decks (class-1/2/3) reuse this exact block.
+   ============================================================ */
+:root{
+  --stage-bg:#07080f;
+  --bg:#07080f;
+  --panel:#10121f;
+  --violet:#8b5cf6;
+  --violet-soft:#a78bfa;
+  --cyan:#22d3ee;
+  --white:#eef0f8;
+  --ink:#eef0f8;
+  --dim:#a7aec4;
+  --dim-light:#6b7390;
+  --faint:#4a5068;
+  --line:#1c2035;
+  --amber:#fbbf24;
+  --red:#f87171;
+  --green:#34d399;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* === FIXED 16:9 STAGE (viewport-base.css) === */
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--slide-bg,#07080f);}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;background:var(--slide-bg,#07080f);}
+.slide.active,.slide.visible{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+.deck-controls{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;}
+@media print{
+  html,body{width:1920px;height:auto;overflow:visible;background:#07080f;}
+  .deck-viewport{position:static;overflow:visible;background:#07080f;}
+  .deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none;}
+  .slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always;}
+  .slide:last-child{break-after:auto;page-break-after:auto;}
+  .deck-controls{display:none!important;}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important;}}
+/* === END viewport-base.css === */
+
+body{font-family:'Space Grotesk',sans-serif;}
+.deck-stage{background:var(--bg);}
+.slide{background:var(--bg);}
+.slide::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 40% at 18% -5%, rgba(139,92,246,0.10), transparent),
+             radial-gradient(ellipse 50% 35% at 92% 6%, rgba(34,211,238,0.06), transparent);
+}
+
+.accent-edge{position:absolute;top:0;bottom:0;left:0;width:10px;background:linear-gradient(180deg,var(--violet),var(--cyan));z-index:45;}
+
+.deck-chrome-top{
+  position:absolute;top:0;left:0;right:0;height:80px;z-index:40;
+  display:flex;align-items:center;gap:14px;padding:0 64px 0 84px;
+  border-bottom:1px solid var(--line);
+  font-size:16px;font-weight:700;letter-spacing:1.5px;color:var(--dim-light);
+}
+.deck-chrome-top .sq{width:12px;height:12px;background:var(--violet);box-shadow:0 0 10px var(--violet);}
+.deck-chrome-top .hub-link{color:var(--white);text-decoration:none;font-weight:700;border:1px solid var(--line);padding:3px 12px;font-size:15px;letter-spacing:0.5px;text-transform:none;transition:background 0.15s ease, border-color 0.15s ease;}
+.deck-chrome-top .hub-link:hover{background:rgba(139,92,246,0.15);border-color:var(--violet);}
+.deck-chrome-top .path{color:var(--white);font-family:'JetBrains Mono',monospace;font-size:15px;}
+.deck-chrome-top .weekmeta{margin-left:auto;text-transform:uppercase;}
+
+.deck-chrome-bottom{
+  position:absolute;bottom:0;left:0;right:0;height:60px;z-index:40;
+  display:flex;align-items:center;padding:0 64px 0 84px;
+  font-size:15px;color:var(--dim-light);
+}
+.deck-chrome-bottom .counter{font-weight:700;color:var(--white);font-family:'JetBrains Mono',monospace;}
+.deck-chrome-bottom .hint{margin-left:auto;}
+.deck-chrome-bottom .hint kbd{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:2px 8px;margin:0 2px;color:var(--dim);}
+
+.progress-track{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--line);z-index:41;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));transition:width 0.3s ease;}
+
+.slide-inner{position:absolute;top:130px;left:150px;right:150px;bottom:110px;display:flex;flex-direction:column;}
+.slide.center .slide-inner{align-items:center;justify-content:center;text-align:center;}
+
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--violet-soft);margin-bottom:16px;}
+h2{font-weight:700;font-size:60px;letter-spacing:-1.5px;line-height:1.08;color:var(--white);margin-bottom:32px;}
+.slide p{font-size:27px;color:var(--dim);line-height:1.55;font-weight:400;}
+.slide strong{color:var(--white);font-weight:700;}
+.slide a{color:var(--cyan);}
+.slide code{font-family:'JetBrains Mono',monospace;font-size:0.92em;color:var(--cyan);}
+.subtitle{font-size:25px;color:var(--dim-light);margin-top:8px;font-weight:500;}
+.footnote{font-size:19px;color:var(--dim-light);margin-top:22px;}
+
+ul,ol{margin-left:38px;}
+.slide li{font-size:27px;color:var(--dim);line-height:1.5;margin-bottom:12px;font-weight:400;}
+ul.checklist{list-style:none;margin-left:0;}
+ul.checklist li{padding-left:34px;position:relative;}
+ul.checklist li::before{content:"\2192";color:var(--cyan);font-weight:700;position:absolute;left:0;}
+
+pre{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--violet);padding:28px 32px;margin-top:18px;overflow:hidden;}
+pre code{font-family:'JetBrains Mono',monospace;font-size:20px;line-height:1.48;color:#dfe3f2;white-space:pre;}
+.kw{color:var(--violet-soft);font-weight:700;}
+.str{color:var(--cyan);}
+.cm{color:#5b6178;font-style:italic;}
+
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:60px;}
+.columns h3{font-size:26px;font-weight:700;color:var(--violet-soft);margin-bottom:12px;}
+
+.callout{border-left:4px solid var(--violet);background:rgba(139,92,246,0.10);padding:22px 28px;margin-top:20px;font-size:24px;color:var(--white);font-weight:400;}
+.callout p{color:var(--white);}
+.callout--warning{border-left-color:var(--amber);background:rgba(251,191,36,0.08);}
+.callout--error{border-left-color:var(--red);background:rgba(248,113,113,0.08);}
+.callout--info{border-left-color:var(--cyan);background:rgba(34,211,238,0.08);}
+
+table{width:100%;border-collapse:collapse;margin-top:18px;font-size:22px;}
+th{background:var(--panel);color:var(--violet-soft);text-align:left;padding:13px 16px;font-weight:700;border-bottom:2px solid var(--violet);}
+td{border-top:1px solid var(--line);padding:13px 16px;color:var(--dim);}
+td strong{color:var(--white);}
+
+.pipeline{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin:28px 0;}
+.pipeline-step{background:var(--panel);border:1px solid var(--violet);color:var(--white);padding:16px 28px;font-size:24px;font-weight:700;}
+.pipeline-step.ghost{border-color:var(--line);color:var(--dim-light);}
+.pipeline-step.hot{background:rgba(139,92,246,0.2);box-shadow:0 0 18px rgba(139,92,246,0.35);}
+.pipeline-arrow{color:var(--cyan);font-size:30px;font-weight:700;}
+
+.qr-figure{text-align:center;margin-top:20px;}
+.qr-figure img{max-width:300px;border:2px solid var(--violet);padding:14px;background:#fff;}
+.qr-figure figcaption{margin-top:12px;font-size:19px;color:var(--dim-light);}
+
+.colab-btn{display:inline-block;background:var(--panel);color:var(--white)!important;font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:2px;padding:14px 36px;text-decoration:none!important;border:2px solid var(--cyan);}
+.colab-btn:hover{background:rgba(34,211,238,0.12);}
+
+/* title slide */
+.title-slide .panel-glow{position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 110%, rgba(139,92,246,0.28), transparent);}
+h1.hero-title{font-weight:700;font-size:104px;letter-spacing:-2px;line-height:1.05;color:var(--white);max-width:1550px;}
+h1.hero-title .split-word{color:var(--bg);background:linear-gradient(100deg,var(--violet),var(--cyan));padding:0 22px;display:inline-block;}
+.hero-sub{margin-top:28px;font-size:26px;font-weight:400;color:var(--dim-light);max-width:1000px;}
+.stat-block{position:absolute;right:96px;bottom:96px;display:flex;gap:56px;z-index:2;}
+.stat{text-align:right;}
+.stat .num{font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:var(--cyan);line-height:1;}
+.stat .label{margin-top:6px;font-size:15px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim-light);}
+
+.slide .r{opacity:0;transform:translateY(18px);transition:opacity 0.5s ease-out, transform 0.5s ease-out;}
+.slide.active .r{opacity:1;transform:translateY(0);}
+.slide .r:nth-child(1){transition-delay:0.05s;}
+.slide .r:nth-child(2){transition-delay:0.15s;}
+.slide .r:nth-child(3){transition-delay:0.25s;}
+.slide .r:nth-child(4){transition-delay:0.35s;}
+.slide .r:nth-child(5){transition-delay:0.45s;}
+
+/* vector-space toy diagram */
+.vspace{display:flex;gap:60px;align-items:center;margin-top:10px;}
+.vspace svg{flex:0 0 760px;background:var(--panel);border:1px solid var(--line);}
+.vspace .legend{font-size:24px;color:var(--dim);}
+.vspace .legend div{margin-bottom:14px;}
+.dot-l{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:12px;}
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
+    <div class="accent-edge"></div>
+    <div class="deck-chrome-top"><span class="sq"></span><a class="hub-link" href="index.html">&larr; Hub</a><span class="path">week-3/class-3</span><span class="weekmeta">Week 3 · Class 3</span></div>
+
+    <!-- 1 -->
+    <section class="slide active title-slide">
+      <div class="panel-glow"></div>
+      <div class="slide-inner">
+        <p class="eyebrow r">Latent Space</p>
+        <div class="r"><h1 class="hero-title">Qdrant &amp; the<br><span class="split-word">Retrieval</span> Agent</h1></div>
+        <p class="hero-sub r">Week 3 · Class 3 · A real vector database, wired into your LangGraph agent</p>
+      </div>
+      <div class="stat-block r">
+        <div class="stat"><div class="num">top-k</div><div class="label">Real retrieval</div></div>
+        <div class="stat"><div class="num">01</div><div class="label">Lab deliverable</div></div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">What FAISS Doesn't Do</h2>
+      <table class="r">
+        <thead><tr><th>Need</th><th>FAISS (library)</th><th>Vector DB (Qdrant)</th></tr></thead>
+        <tbody>
+          <tr><td>Store text + metadata with the vector</td><td>DIY parallel list</td><td><strong>Payloads, built in</strong></td></tr>
+          <tr><td>Filter ("only PDF chunks", "price &lt; 20")</td><td>Post-filter by hand</td><td><strong>Filtered search, pre-indexed</strong></td></tr>
+          <tr><td>Update / delete one document</td><td>Rebuild or hack</td><td><strong>Upsert / delete by id</strong></td></tr>
+          <tr><td>Survive restarts, serve many apps</td><td>Manual save/load, in-process</td><td><strong>Server + persistent storage</strong></td></tr>
+        </tbody>
+      </table>
+      <p class="r">Same math underneath (Qdrant runs HNSW) — plus everything a <strong>database</strong> owes you.</p>
+    </div></section>
+
+    <!-- 3 -->
+    <section class="slide center"><div class="slide-inner">
+      <h2 class="r">Follow Along in Colab</h2>
+      <p class="subtitle r">week3_qdrant_retrieval_agent.ipynb — ends with your upgraded agent</p>
+      <p class="r" style="margin-top:24px;"><a class="colab-btn" href="https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-3/notebooks/week3_qdrant_retrieval_agent.ipynb" target="_blank" rel="noopener">Open in Colab</a></p>
+      <figure class="qr-figure r"><img src="../assets/images/qr-codes/week3-class-3.png" alt="QR code for Week 3 Class 3 notebook"></figure>
+    </div></section>
+
+    <!-- 4 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">The Vector DB Landscape</h2>
+      <table class="r">
+        <thead><tr><th>Option</th><th>Type</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr><td><strong>FAISS</strong></td><td>Library</td><td>Research, embedded search, full control</td></tr>
+          <tr><td><strong>Chroma</strong></td><td>Embedded DB</td><td>Quick prototypes, LangChain tutorials</td></tr>
+          <tr><td><strong>Qdrant</strong></td><td>Server (Rust) + in-memory mode</td><td>Filters + payloads, prototype→production on one API</td></tr>
+          <tr><td><strong>pgvector</strong></td><td>Postgres extension</td><td>You already run Postgres</td></tr>
+          <tr><td><strong>Pinecone</strong></td><td>Managed cloud</td><td>Zero ops, pay-as-you-go</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><p>We use <strong>Qdrant</strong>: <code>QdrantClient(":memory:")</code> runs the full API inside Colab — the same code later points at a real server with one line changed.</p></div>
+    </div></section>
+
+    <!-- 5 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Qdrant's Three Nouns</h2>
+      <ul class="r">
+        <li><strong>Collection</strong> — a named set of vectors with one config (size=384, distance=Cosine). Like a SQL table.</li>
+        <li><strong>Point</strong> — one entry: <code>id</code> + <code>vector</code> + <code>payload</code>. Like a row.</li>
+        <li><strong>Payload</strong> — arbitrary JSON riding along with the vector: text, source, page, price… Like the other columns — <em>and filterable</em>.</li>
+      </ul>
+      <pre class="r"><code class="language-python">PointStruct(
+    id=42,
+    vector=[0.12, -0.87, ...],                       # 384 floats
+    payload={"text": "Automobile repair pricing...",
+             "source": "sample.pdf", "page": 3},
+)</code></pre>
+    </div></section>
+
+    <!-- 6 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 4</p>
+      <h2 class="r">Create a Collection, Load Your Chunks</h2>
+      <pre class="r"><code class="language-python">!pip install -q qdrant-client
+
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
+
+client = QdrantClient(":memory:")                # in-process, zero setup
+
+client.create_collection(
+    collection_name="bootcamp_chunks",
+    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+)
+
+points = [
+    PointStruct(id=i, vector=embs[i], payload=chunks[i])
+    for i in range(len(chunks))
+]
+client.upsert("bootcamp_chunks", points)</code></pre>
+    </div></section>
+
+    <!-- 7 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 5</p>
+      <h2 class="r">Search — With Payloads Attached</h2>
+      <pre class="r"><code class="language-python">q = model.encode("how do I fix my car?").tolist()
+
+hits = client.query_points(
+    collection_name="bootcamp_chunks",
+    query=q,
+    limit=3,
+).points
+
+for h in hits:
+    print(f"{h.score:.3f}  [{h.payload['source']}]  {h.payload['text'][:70]}")</code></pre>
+      <p class="r">No more <code>ids → chunk_store[i]</code> bookkeeping — <strong>the text and source come back with every hit</strong>.</p>
+    </div></section>
+
+    <!-- 8 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 6</p>
+      <h2 class="r">Filtered Search — Meaning AND Metadata</h2>
+      <pre class="r"><code class="language-python">from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+
+hits = client.query_points(
+    collection_name="bootcamp_chunks",
+    query=q,
+    query_filter=Filter(must=[
+        FieldCondition(key="source", match=MatchValue(value="sample.pdf")),
+    ]),
+    limit=3,
+).points
+
+# or on your book dataset:  Range(key="price_gbp", lte=20.0)</code></pre>
+      <p class="r">Remember Class 1: embeddings can't do "under £20". <strong>Filters + vectors together</strong> can — this is the fix.</p>
+    </div></section>
+
+    <!-- 9 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">The Retrieval Pipeline</h2>
+      <div class="pipeline r">
+        <span class="pipeline-step">Question</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Embed</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Qdrant top-k</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Context block</span><span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step hot">Groq LLM</span>
+      </div>
+      <pre class="r"><code class="language-python">def retrieve(question: str, k: int = 3) -> list[dict]:
+    q = model.encode(question).tolist()
+    hits = client.query_points("bootcamp_chunks", query=q, limit=k).points
+    return [
+        {"text": h.payload["text"], "source": h.payload["source"],
+         "score": h.score}
+        for h in hits
+    ]</code></pre>
+    </div></section>
+
+    <!-- 10 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 8</p>
+      <h2 class="r">Grounded Prompting — With Sources</h2>
+      <pre class="r"><code class="language-python">docs_prompt = ChatPromptTemplate.from_messages([
+    ("system",
+     "Answer ONLY from the provided context. "
+     "If the context does not contain the answer, say so. "
+     "Cite the source of each fact like [source]."),
+    ("human", "Context:\n{context}\n\nQuestion: {question}"),
+])
+
+context = "\n\n".join(
+    f"[{h['source']}] {h['text']}" for h in retrieve(question)
+)</code></pre>
+      <p class="r">Grounding rule + citations = fewer hallucinations, and your demo can <strong>show where every answer came from</strong>.</p>
+    </div></section>
+
+    <!-- 11 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 9</p>
+      <h2 class="r">The Upgrade: Your <code style="color:inherit;">docs</code> Node, For Real</h2>
+      <div class="columns r">
+        <div>
+          <h3>Week 2 (placeholder)</h3>
+          <pre style="margin-top:0;"><code class="language-python">def docs_node(state):
+    context = CONTEXT_CHUNKS
+    # one hardcoded string
+    ...</code></pre>
+        </div>
+        <div>
+          <h3>Week 3 (retrieval)</h3>
+          <pre style="margin-top:0;"><code class="language-python">def docs_node(state):
+    hits = retrieve(
+        state["user_input"], k=3)
+    context = format_hits(hits)
+    ...</code></pre>
+        </div>
+      </div>
+      <p class="r">One function swap. Same graph, same routing — the <code>docs</code> intent is now backed by a vector database.</p>
+    </div></section>
+
+    <!-- 12 -->
+    <section class="slide"><div class="slide-inner">
+      <p class="eyebrow r">Notebook · Section 10</p>
+      <h2 class="r">Test the Full Agent</h2>
+      <pre class="r"><code class="language-python">ask("hey, how's it going?")            # → chat
+ask("what is 23 * 19 - 7?")            # → calculate
+ask("latest news about the World Cup") # → research  (live web)
+ask("what does our PDF say about       # → docs      (Qdrant retrieval,
+     pricing?")                        #              sources cited)</code></pre>
+      <ul class="checklist r">
+        <li>Four intents, four different engines behind one chat box</li>
+        <li><code>docs</code> answers change when you swap the collection — <strong>knowledge is now data, not code</strong></li>
+      </ul>
+    </div></section>
+
+    <!-- 13 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">When Retrieval Fails</h2>
+      <table class="r">
+        <thead><tr><th>Failure</th><th>Symptom</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Question off-corpus</td><td>Top hit score ~0.2, answer hallucinated</td><td><strong>Score threshold</strong> → "I don't know"</td></tr>
+          <tr><td>Chunks too big</td><td>Right doc, diluted context</td><td>Re-chunk smaller (Week 2, Section 13)</td></tr>
+          <tr><td>Chunks too small</td><td>Answer split across chunks</td><td>Raise k, add overlap</td></tr>
+          <tr><td>Wrong route</td><td>docs question lands in chat</td><td>Improve classify prompt</td></tr>
+        </tbody>
+      </table>
+      <pre class="r"><code class="language-python">if not hits or hits[0]["score"] &lt; 0.35:
+    return "I couldn't find that in the documents."</code></pre>
+    </div></section>
+
+    <!-- 14 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Lab Deliverable — Week 3</h2>
+      <div class="callout r"><p><strong>Retrieval-Enabled LangGraph Agent</strong></p></div>
+      <ul class="checklist r">
+        <li>Your Week 2 chunks embedded with <code>all-MiniLM-L6-v2</code></li>
+        <li>A Qdrant collection with payloads: <code>text</code>, <code>source</code> (+ <code>page</code>/<code>price</code> where you have them)</li>
+        <li><code>docs</code> node retrieves top-3 live — no hardcoded context anywhere</li>
+        <li>Score threshold: off-corpus questions get an honest "not in my documents"</li>
+        <li>At least one <strong>filtered</strong> query working (by source or price)</li>
+      </ul>
+    </div></section>
+
+    <!-- 15 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Demo Rubric (2–3 min)</h2>
+      <ol class="r">
+        <li><strong>Routing sanity</strong> — one prompt per intent, show the route taken</li>
+        <li><strong>Grounded answer</strong> — a question only your dataset can answer, with sources shown</li>
+        <li><strong>Honest miss</strong> — an off-corpus question that triggers the threshold</li>
+        <li><strong>Filtered search</strong> — same query, restricted by source or price</li>
+      </ol>
+      <div class="callout callout--info r"><p>Grading favors <strong>evidence over polish</strong>: show the retrieved chunks and scores, not just the final answer.</p></div>
+    </div></section>
+
+    <!-- 16 -->
+    <section class="slide"><div class="slide-inner">
+      <h2 class="r">Preview: Week 4 — Full RAG</h2>
+      <ul class="r">
+        <li><strong>RAG as a discipline</strong> — evaluation, groundedness, answer quality</li>
+        <li><strong>Hybrid retrieval</strong> — BM25 keywords + vectors (fixes exact-ID misses from Class 1)</li>
+        <li><strong>Re-ranking</strong> — a second model reorders the top-20</li>
+        <li><strong>Gradio showcase</strong> — final chatbot, demo day 🎓</li>
+      </ul>
+      <div class="callout r"><p>Everything you built this week <em>is</em> the R in RAG. Week 4 adds the measuring tape and the stage.</p></div>
+    </div></section>
+
+    <!-- 17 -->
+    <section class="slide center"><div class="slide-inner">
+      <h2 class="r">Week 3 Complete</h2>
+      <ul class="checklist r" style="display:inline-block;text-align:left;">
+        <li>Meaning as vectors — cosine, by hand and at scale</li>
+        <li>FAISS indexes: Flat, IVF, HNSW — benchmarked</li>
+        <li>Qdrant: collections, payloads, filtered search</li>
+        <li>A LangGraph agent that retrieves before it answers</li>
+      </ul>
+      <p class="subtitle r" style="margin-top:24px;">Questions? Open office hours · See you in Week 4</p>
+    </div></section>
+
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 17</span><span class="hint">Nav <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>Space</kbd></span></div>
+  </main>
+</div>
+
+<script>
+class SlidePresentation{
+  constructor(){
+    this.slides=document.querySelectorAll('.slide');
+    this.current=0;
+    this.stage=document.getElementById('deckStage');
+    this.counter=document.getElementById('slideCounter');
+    this.fill=document.getElementById('progressFill');
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.showSlide(0);
+  }
+  setupStageScale(){
+    const scale=()=>{
+      const f=Math.min(window.innerWidth/1920, window.innerHeight/1080);
+      const x=(window.innerWidth-1920*f)/2;
+      const y=(window.innerHeight-1080*f)/2;
+      this.stage.style.transform=`translate(${x}px, ${y}px) scale(${f})`;
+    };
+    scale();
+    window.addEventListener('resize', scale);
+  }
+  setupKeyboardNav(){
+    document.addEventListener('keydown', (e)=>{
+      if(e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+      if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ this.next(); e.preventDefault(); }
+      if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ this.prev(); e.preventDefault(); }
+    });
+  }
+  setupTouchNav(){
+    let sx=0;
+    document.addEventListener('touchstart', (e)=>{ sx=e.touches[0].clientX; });
+    document.addEventListener('touchend', (e)=>{
+      const dx=e.changedTouches[0].clientX-sx;
+      if(dx<-50) this.next();
+      if(dx>50) this.prev();
+    });
+    document.addEventListener('wheel', (e)=>{
+      if(Math.abs(e.deltaY)<30) return;
+      if(e.deltaY>0) this.next(); else this.prev();
+    }, {passive:true});
+  }
+  showSlide(i){
+    this.current=Math.max(0, Math.min(i, this.slides.length-1));
+    this.slides.forEach((s,idx)=>{
+      s.classList.toggle('active', idx===this.current);
+      s.classList.toggle('visible', idx===this.current);
+    });
+    if(this.counter) this.counter.textContent = String(this.current+1).padStart(2,'0')+' / '+String(this.slides.length).padStart(2,'0');
+    if(this.fill) this.fill.style.width = ((this.current+1)/this.slides.length*100)+'%';
+  }
+  next(){ this.showSlide(this.current+1); }
+  prev(){ this.showSlide(this.current-1); }
+}
+
+function highlightCode(){
+  document.querySelectorAll('pre code').forEach((block)=>{
+    const raw=block.textContent;
+    const esc=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const kws='def|return|import|from|if|elif|else|for|while|in|True|False|None|class|try|except|as|break|continue|and|or|not|with|lambda';
+    const pattern=new RegExp('(#.*$)|("""[\\s\\S]*?"""|\'\'\'[\\s\\S]*?\'\'\'|"[^"\\n]*"|\'[^\'\\n]*\')|\\b('+kws+')\\b','gm');
+    block.innerHTML = esc.replace(pattern, (m, cm, str, kw)=>{
+      if(cm) return '<span class="cm">'+cm+'</span>';
+      if(str) return '<span class="str">'+str+'</span>';
+      if(kw) return '<span class="kw">'+kw+'</span>';
+      return m;
+    });
+  });
+}
+
+class InlineEditor{
+  constructor(storageKey){
+    this.storageKey=storageKey;
+    this.isActive=false;
+    this.restore();
+  }
+  restore(){
+    const saved=localStorage.getItem(this.storageKey);
+    if(!saved) return;
+    try{
+      const data=JSON.parse(saved);
+      document.querySelectorAll('.slide').forEach((s,i)=>{ if(data[i]!==undefined) s.innerHTML=data[i]; });
+    }catch(e){}
+  }
+  save(){
+    const data=Array.from(document.querySelectorAll('.slide')).map(s=>s.innerHTML);
+    localStorage.setItem(this.storageKey, JSON.stringify(data));
+  }
+  toggleEditMode(){
+    this.isActive=!this.isActive;
+    document.querySelectorAll('.slide h1,.slide h2,.slide h3,.slide p,.slide li,.slide span').forEach(el=>{
+      el.setAttribute('contenteditable', this.isActive ? 'true':'false');
+    });
+    document.getElementById('editToggle').classList.toggle('active', this.isActive);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  highlightCode();
+  window.deck = new SlidePresentation();
+
+  const editor = new InlineEditor('deck-edits::week3-class3');
+  const hotzone=document.querySelector('.edit-hotzone');
+  const editToggle=document.getElementById('editToggle');
+  let hideTimeout=null;
+  if(hotzone && editToggle){
+    editToggle.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('click', ()=>editor.toggleEditMode());
+    hotzone.addEventListener('mouseenter', ()=>{clearTimeout(hideTimeout); editToggle.classList.add('show');});
+    hotzone.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+    editToggle.addEventListener('mouseenter', ()=>clearTimeout(hideTimeout));
+    editToggle.addEventListener('mouseleave', ()=>{hideTimeout=setTimeout(()=>{ if(!editor.isActive) editToggle.classList.remove('show'); },400);});
+  }
+  document.addEventListener('keydown', (e)=>{
+    if((e.key==='e'||e.key==='E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable')==='true')){ editor.toggleEditMode(); }
+    if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); editor.save(); }
+  });
+});
+</script>
+
+<div class="edit-hotzone" style="position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)" style="position:fixed;top:12px;left:12px;z-index:10001;opacity:0;pointer-events:none;transition:opacity 0.3s ease;background:var(--panel);border:1px solid var(--violet);color:var(--white);font-size:18px;padding:8px 12px;">&#9998;</button>
+<style>
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+</style>
+</body>
+</html>
