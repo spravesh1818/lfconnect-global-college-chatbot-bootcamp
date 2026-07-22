@@ -1,6 +1,6 @@
 # Global Chatbot Bootcamp — Course Site
 
-Static teaching site for **Building AI Chatbots with LLMs and RAG**. Week 1 and Week 2 slide decks are live; Weeks 3–4 are stubbed as “Coming soon.”
+Static teaching site for **Building AI Chatbots with LLMs and RAG**. Weeks 1–3 slide decks are live; Week 4 is stubbed as “Coming soon.”
 
 ## Local preview
 
@@ -49,6 +49,16 @@ week-2/
     week2_data_collection_rag.ipynb     # Class 4 — scraping, PDF chunking, wiring data into the agent
   data/
     sample.pdf          # Sample PDF for in-class parsing
+week-3/
+  index.html            # Week 3 hub (Latent Space theme)
+  roadmap.html          # Animated canvas infographic: the course journey so far
+  class-1.html          # Embeddings foundations slides
+  class-2.html          # FAISS vector search slides
+  class-3.html          # Qdrant + retrieval-enabled agent slides
+  notebooks/
+    week3_embeddings_foundations.ipynb  # Class 1 — cosine, semantic search, PCA, limitations
+    week3_faiss_vector_search.ipynb     # Class 2 — Flat/IVF/HNSW, recall@k benchmarks, persistence
+    week3_qdrant_retrieval_agent.ipynb  # Class 3 — Qdrant, filters, retrieval-backed docs node
 assets/
   images/               # Logos, QR codes, diagrams
 docs/
@@ -59,8 +69,9 @@ docs/
 
 Every page is a self-contained HTML file — no shared CSS/JS, no build step, no external slide
 framework. Each week has its own visual identity: the course home uses a warm editorial/paper
-theme, Week 1 uses a retro phosphor-green terminal theme, and Week 2 uses a white/black "Electric
-Studio" split-panel theme. See [docs/design.md](docs/design.md) for details.
+theme, Week 1 uses a retro phosphor-green terminal theme, Week 2 uses a white/black "Electric
+Studio" split-panel theme, and Week 3 uses a dark "Latent Space" theme (violet + cyan on
+near-black). See [docs/design.md](docs/design.md) for details.
 
 ## Colab notebooks
 
@@ -81,6 +92,38 @@ Students need a free API key from [console.groq.com](https://console.groq.com) b
 **Class 2 homework:** implement the Gradio chat UI described in notebook **Section 16** (system prompt + `chat(messages)`).
 
 **PDF export:** run `./scripts/export-notebook-pdf.sh` or see [docs/export-pdf.md](docs/export-pdf.md) (email the PDF manually, e.g. to spravesh1818@gmail.com).
+
+## Week 3 content
+
+| Class | Topic | Notebook |
+|-------|--------|----------|
+| 1 | Embeddings — meaning as numbers: cosine similarity by hand, sentence-transformers (`all-MiniLM-L6-v2`, 384-D), a NumPy semantic search engine over Week 2 chunks, PCA visualization, limitation lab (negation / exact IDs / numbers) | `week3_embeddings_foundations.ipynb` |
+| 2 | Vector search at scale — exact vs ANN, FAISS `Flat` / `IVF` / `HNSW`, live benchmarks with recall@10, nprobe/efSearch tuning, index + chunk-store persistence | `week3_faiss_vector_search.ipynb` |
+| 3 | Qdrant + retrieval agent — collections, points, payloads, filtered search, `retrieve()` with score threshold, grounded prompting with source citations, upgraded `docs` node in the Week 2 LangGraph agent | `week3_qdrant_retrieval_agent.ipynb` |
+
+Week 3 also ships [week-3/roadmap.html](week-3/roadmap.html) — an animated HTML5-canvas
+infographic of the course journey (basic chat → prompts/agents/data → embeddings → RAG),
+embedded as slide 2 of Class 1 and linked from the Week 3 hub.
+
+**Week 3 lab deliverable:** Retrieval-Enabled LangGraph Agent — the Week 2 agent with its `docs`
+node backed by live top-k Qdrant retrieval over the student's own chunk dataset, with payload
+filters, a score threshold for honest misses, and sources cited in answers.
+
+**Open Week 3 notebooks in Colab:**
+
+```
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-3/notebooks/week3_embeddings_foundations.ipynb
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-3/notebooks/week3_faiss_vector_search.ipynb
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-3/notebooks/week3_qdrant_retrieval_agent.ipynb
+```
+
+**Dependencies (installed in notebooks):** `sentence-transformers`, `faiss-cpu`, `qdrant-client`, `scikit-learn`, `langchain-core`, `langchain-groq`, `langgraph`, `langchain-community`, `duckduckgo-search`
+
+Only Class 3 needs the Groq API key; Classes 1–2 run fully offline in Colab.
+
+**PDF export (Week 3):** `./scripts/export-week3-notebook-pdf.sh` (exports all three notebooks)
+
+**QR codes:** add `week3-class-1.png`, `week3-class-2.png`, `week3-class-3.png` under `assets/images/qr-codes/` — see that folder's README.
 
 ## Week 2 content
 
