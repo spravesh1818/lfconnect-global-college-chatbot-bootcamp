@@ -402,6 +402,45 @@ pages = loader.load()  # one Document per page</pre>
 
 <div class="slide-inner">
 
+<section class="slide paper ">
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+<div class="slide-inner">
+<p class="eyebrow reveal">Splitters</p>
+<h2 class="reveal">Different ways to cut text</h2>
+<table class="dense reveal">
+  <tr><th>Splitter</th><th>Cuts on</th><th>Use when</th></tr>
+  <tr><td><code>CharacterTextSplitter</code></td><td>One separator (e.g. <code>\n\n</code>)</td><td>Very simple prose</td></tr>
+  <tr><td><code>RecursiveCharacterTextSplitter</code></td><td>Separators in priority order</td><td><strong>Default RAG</strong></td></tr>
+  <tr><td><code>TokenTextSplitter</code></td><td>Model tokens</td><td>Hard token budgets</td></tr>
+  <tr><td><code>MarkdownHeaderTextSplitter</code></td><td><code>#</code> / <code>##</code> headers</td><td>Markdown notes</td></tr>
+  <tr><td>Code (<code>from_language</code>)</td><td>Language-aware</td><td>Source code</td></tr>
+</table>
+</div>
+</section>
+<section class="slide paper ">
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+<div class="slide-inner">
+<p class="eyebrow reveal">Recursive</p>
+<h2 class="reveal">How Recursive works</h2>
+<p class="reveal">Try the best break first. If a piece is still too big, recurse with a weaker break.</p>
+<div class="flow reveal">
+  <span class="pill">\n\n paragraphs</span><span class="arrow">→</span>
+  <span class="pill">\n lines</span><span class="arrow">→</span>
+  <span class="pill">spaces / words</span><span class="arrow">→</span>
+  <span class="pill">characters</span>
+</div>
+<div class="grid-2 reveal" style="margin-top:28px">
+  <div class="card"><h3>Why we use it</h3><p>Keeps paragraphs together longer than a naive fixed-width cut — better retrieval chunks for PDFs and wiki text.</p></div>
+  <div class="card"><h3>Overlap</h3><p><code>chunk_overlap</code> copies the tail into the next chunk so boundary sentences are not lost.</p></div>
+</div>
+</div>
+</section>
 <p class="eyebrow reveal">Splitter</p>
 <h2 class="reveal"><code>RecursiveCharacterTextSplitter</code></h2>
 <pre class="reveal">RecursiveCharacterTextSplitter(
@@ -412,6 +451,7 @@ pages = loader.load()  # one Document per page</pre>
   <div class="card"><h3>1000</h3><p>Enough for an article-ish passage without flooding the prompt.</p></div>
   <div class="card"><h3>200</h3><p>~20% overlap — homework: try 500 / 1500 and compare.</p></div>
 </div>
+<p class="note reveal">LangChain recommends Recursive as the default generic text splitter.</p>
 
 </div>
 
