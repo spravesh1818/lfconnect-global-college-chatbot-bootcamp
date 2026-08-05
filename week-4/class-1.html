@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class 1 — Constitution RAG Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* === viewport-base === */
+
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--slide-bg,#fff);}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;background:var(--slide-bg,#fff);}
+.slide.active,.slide.visible{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+.deck-controls{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;}
+@media print{
+  html,body{width:1920px;height:auto;overflow:visible;background:#fff;}
+  .deck-viewport{position:static;overflow:visible;background:#fff;}
+  .deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none;}
+  .slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always;}
+  .slide:last-child{break-after:auto;page-break-after:auto;}
+  .deck-controls{display:none!important;}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important;}}
+
+/* === Constitution Archive theme === */
+
+:root{
+  --stage-bg:#14110f;
+  --slide-bg:#f3efe6;
+  --ink:#14110f;
+  --paper:#f3efe6;
+  --crimson:#9b1b2e;
+  --gold:#b8953a;
+  --dim:#6b645c;
+  --muted:#9a9186;
+  --line:#2e2924;
+  --panel:#1c1815;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Sora',sans-serif;color:var(--ink);}
+.slide.dark{--slide-bg:var(--ink);background:var(--ink);color:var(--paper);}
+.slide.paper{background:var(--paper);color:var(--ink);}
+.accent-edge{position:absolute;top:0;bottom:0;left:0;width:10px;background:linear-gradient(180deg,var(--crimson),var(--gold));z-index:45;}
+.deck-chrome-top{
+  position:absolute;top:0;left:0;right:0;height:72px;z-index:40;
+  display:flex;align-items:center;gap:14px;padding:0 64px 0 84px;
+  border-bottom:1px solid rgba(46,41,36,0.18);
+  font-size:15px;font-weight:600;letter-spacing:1px;color:var(--dim);
+  font-family:'IBM Plex Mono',monospace;
+}
+.slide.dark .deck-chrome-top{border-bottom-color:rgba(243,239,230,0.12);color:var(--muted);}
+.deck-chrome-top .sq{width:12px;height:12px;background:var(--crimson);box-shadow:0 0 10px rgba(155,27,46,0.45);}
+.deck-chrome-top a{color:var(--gold);text-decoration:none;font-weight:700;}
+.deck-chrome-top .weekmeta{margin-left:auto;text-transform:uppercase;}
+.deck-chrome-bottom{
+  position:absolute;bottom:0;left:0;right:0;height:56px;z-index:40;
+  display:flex;align-items:center;padding:0 64px 0 84px;
+  font-size:14px;color:var(--dim);font-family:'IBM Plex Mono',monospace;
+}
+.slide.dark .deck-chrome-bottom{color:var(--muted);}
+.deck-chrome-bottom .counter{font-weight:700;color:var(--ink);}
+.slide.dark .deck-chrome-bottom .counter{color:var(--paper);}
+.deck-chrome-bottom .hint{margin-left:auto;}
+.progress-track{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(46,41,36,0.15);z-index:41;}
+.slide.dark .progress-track{background:rgba(243,239,230,0.12);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--crimson),var(--gold));width:0;}
+.slide-inner{position:absolute;top:110px;left:120px;right:120px;bottom:90px;display:flex;flex-direction:column;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--crimson);margin-bottom:14px;}
+.slide.dark .eyebrow{color:var(--gold);}
+h1{font-family:'Newsreader',serif;font-weight:700;font-size:84px;letter-spacing:-1.5px;line-height:1.05;}
+h2{font-family:'Newsreader',serif;font-weight:700;font-size:54px;letter-spacing:-1px;line-height:1.1;margin-bottom:22px;}
+h3{font-family:'Newsreader',serif;font-weight:700;font-size:30px;margin-bottom:12px;}
+p,li{font-size:24px;line-height:1.45;color:var(--dim);}
+.slide.dark p,.slide.dark li{color:var(--muted);}
+strong{color:var(--ink);font-weight:700;}
+.slide.dark strong{color:var(--paper);}
+code,.mono{font-family:'IBM Plex Mono',monospace;color:var(--crimson);font-size:0.92em;}
+.slide.dark code,.slide.dark .mono{color:var(--gold);}
+.bar{height:8px;width:100%;background:linear-gradient(90deg,var(--crimson),var(--gold));position:absolute;left:0;right:0;bottom:0;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:18px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;margin-top:18px;}
+.card{background:rgba(20,17,15,0.04);border:1px solid rgba(46,41,36,0.18);padding:22px 24px;}
+.slide.dark .card{background:rgba(243,239,230,0.05);border-color:rgba(243,239,230,0.12);}
+.card h3{margin-bottom:10px;}
+.card p,.card li{font-size:20px;}
+table.dense{width:100%;border-collapse:collapse;margin-top:16px;font-size:20px;}
+table.dense th,table.dense td{border-bottom:1px solid rgba(46,41,36,0.18);padding:12px 10px;text-align:left;vertical-align:top;}
+.slide.dark table.dense th,.slide.dark table.dense td{border-bottom-color:rgba(243,239,230,0.12);}
+table.dense th{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:1px;text-transform:uppercase;color:var(--crimson);}
+.slide.dark table.dense th{color:var(--gold);}
+pre{background:#1a1613;color:#f3efe6;padding:20px 22px;font-family:'IBM Plex Mono',monospace;font-size:18px;line-height:1.45;overflow:hidden;margin-top:14px;}
+.steps{counter-reset:step;margin-top:10px;}
+.steps .step{display:grid;grid-template-columns:64px 1fr;gap:18px;padding:14px 0;border-bottom:1px solid rgba(46,41,36,0.14);}
+.steps .step:before{counter-increment:step;content:counter(step, decimal-leading-zero);font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--crimson);}
+.flow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;}
+.flow .pill{border:1px solid rgba(46,41,36,0.25);padding:12px 16px;font-size:18px;font-weight:600;background:#fff;}
+.flow .arrow{color:var(--crimson);font-size:28px;font-weight:700;}
+.slide.dark .flow .pill{background:rgba(243,239,230,0.06);border-color:rgba(243,239,230,0.18);color:var(--paper);}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .55s var(--ease), transform .55s var(--ease);}
+.slide.visible .reveal{opacity:1;transform:none;}
+.slide.visible .reveal:nth-child(1){transition-delay:.05s;}
+.slide.visible .reveal:nth-child(2){transition-delay:.12s;}
+.slide.visible .reveal:nth-child(3){transition-delay:.19s;}
+.slide.visible .reveal:nth-child(4){transition-delay:.26s;}
+.slide.visible .reveal:nth-child(5){transition-delay:.33s;}
+.note{font-size:18px;color:var(--muted);margin-top:16px;}
+a.colab{color:var(--crimson);font-weight:700;font-size:22px;}
+.slide.dark a.colab{color:var(--gold);}
+ul.compact{margin:8px 0 0 22px;}
+ul.compact li{margin-bottom:8px;}
+.check li{list-style:none;margin-left:0;padding-left:0;}
+.check li:before{content:"☐ ";color:var(--crimson);font-weight:700;}
+
+.edit-hotzone{position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;}
+.edit-toggle{position:fixed;top:12px;left:12px;z-index:10001;opacity:0;pointer-events:none;transition:opacity .3s ease;background:var(--ink);border:1px solid var(--gold);color:var(--paper);font-size:18px;padding:8px 12px;}
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+</style>
+</head>
+<body data-edit-key="deck-edits::week4-class1">
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+<section class="slide dark ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Week 04 · Capstone</p>
+<h1 class="reveal">Constitution <span style="color:var(--crimson)">RAG</span></h1>
+<p class="reveal" style="margin-top:28px;font-size:28px;max-width:1100px;color:var(--muted)">Class 1 — Build a grounded RAG pipeline over the Nepal Constitution with LangChain, MiniLM, in-memory Qdrant, and Groq.</p>
+
+</div>
+<div class='bar'></div>
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Framing</p>
+<h2 class="reveal">One PDF → a grounded chatbot</h2>
+<div class="grid-2 reveal">
+  <div class="card"><h3>The job</h3><p>Answer questions using <strong>only</strong> retrieved passages from the Constitution — with citations.</p></div>
+  <div class="card"><h3>Not the job</h3><p>No hybrid search, no re-ranking, no eval harness this week. Ship a clear RAG loop first.</p></div>
+</div>
+<p class="note reveal">Capstone = end-to-end demo students can explain in 2–3 minutes.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Agenda</p>
+<h2 class="reveal">Learning goals</h2>
+<ul class="compact reveal">
+  <li>Load a PDF with a LangChain <strong>document loader</strong> (and know other loaders exist)</li>
+  <li>Chunk → embed with free <code>all-MiniLM-L6-v2</code> → store in <strong>in-memory Qdrant</strong></li>
+  <li>Answer with a grounded Groq prompt that cites retrieved pages</li>
+</ul>
+<div class="flow reveal" style="margin-top:36px">
+  <span class="pill">Load</span><span class="arrow">→</span>
+  <span class="pill">Chunk</span><span class="arrow">→</span>
+  <span class="pill">Embed</span><span class="arrow">→</span>
+  <span class="pill">Qdrant</span><span class="arrow">→</span>
+  <span class="pill">Groq</span>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Recap</p>
+<h2 class="reveal">RAG in one diagram</h2>
+<div class="flow reveal">
+  <span class="pill">Question</span><span class="arrow">→</span>
+  <span class="pill">Retrieve top-k by meaning</span><span class="arrow">→</span>
+  <span class="pill">Stuff context into prompt</span><span class="arrow">→</span>
+  <span class="pill">LLM answers + cites</span>
+</div>
+<div class="grid-2 reveal" style="margin-top:28px">
+  <div class="card"><h3>R — Retrieval</h3><p>Pick the <strong>right paragraphs</strong> from a large corpus.</p></div>
+  <div class="card"><h3>G — Generation</h3><p>Write the answer <strong>from that context</strong>, not from memory alone.</p></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Corpus</p>
+<h2 class="reveal">Why the Nepal Constitution?</h2>
+<div class="grid-3 reveal">
+  <div class="card"><h3>Public / teachable</h3><p>Stable legal text students can reason about.</p></div>
+  <div class="card"><h3>Real PDF path</h3><p>Forces the full loader → chunk → index loop.</p></div>
+  <div class="card"><h3>Clear misses</h3><p>Off-topic questions should fail closed.</p></div>
+</div>
+<p class="note reveal">Repo ships <code>week-4/data/nepal-constitution.pdf</code> as a placeholder — replace with the official PDF before class.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Stack</p>
+<h2 class="reveal">Tools for today’s pipeline</h2>
+<table class="dense reveal">
+  <tr><th>Step</th><th>Library</th><th>Choice</th></tr>
+  <tr><td>Load PDF</td><td>LangChain</td><td><code>PyPDFLoader</code></td></tr>
+  <tr><td>Chunk</td><td>LangChain</td><td><code>RecursiveCharacterTextSplitter</code> 1000 / 200</td></tr>
+  <tr><td>Embed</td><td>sentence-transformers</td><td><code>all-MiniLM-L6-v2</code> (384-d, free)</td></tr>
+  <tr><td>Store</td><td>Qdrant</td><td><code>QdrantClient(":memory:")</code></td></tr>
+  <tr><td>Generate</td><td>LangChain + Groq</td><td><code>ChatGroq</code> · llama-3.3-70b-versatile</td></tr>
+</table>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Loaders</p>
+<h2 class="reveal">Document loaders = adapters</h2>
+<p class="reveal">A loader turns a source into LangChain <code>Document</code> objects: <strong>page_content</strong> + <strong>metadata</strong>.</p>
+<div class="grid-2 reveal">
+  <div class="card"><h3>Why it matters</h3><p>Swap PDF → web → CSV later without rewriting retrieval + prompting.</p></div>
+  <div class="card"><h3>Today</h3><p>One PDF loader end-to-end. Mentally catalog the others.</p></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Loader menu</p>
+<h2 class="reveal">Other loaders (know they exist)</h2>
+<table class="dense reveal">
+  <tr><th>Loader</th><th>Typical source</th></tr>
+  <tr><td><code>PyPDFLoader</code> / <code>PyMuPDFLoader</code></td><td>PDF files</td></tr>
+  <tr><td><code>TextLoader</code></td><td>Plain <code>.txt</code></td></tr>
+  <tr><td><code>CSVLoader</code></td><td>Rows as documents</td></tr>
+  <tr><td><code>WebBaseLoader</code></td><td>HTML pages</td></tr>
+  <tr><td><code>DirectoryLoader</code></td><td>Whole folders</td></tr>
+</table>
+<p class="note reveal">Same RAG spine — only the first mile changes.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">PDF</p>
+<h2 class="reveal">Today: <code>PyPDFLoader</code></h2>
+<pre class="reveal">from langchain_community.document_loaders import PyPDFLoader
+loader = PyPDFLoader("data/nepal-constitution.pdf")
+pages = loader.load()  # one Document per page</pre>
+<p class="reveal note">Metadata usually includes <code>page</code> and <code>source</code> — keep them for citations.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Paths</p>
+<h2 class="reveal">Find the PDF in Colab or locally</h2>
+<ul class="compact reveal">
+  <li><code>data/nepal-constitution.pdf</code> (repo layout)</li>
+  <li><code>/content/nepal-constitution.pdf</code> (Colab upload)</li>
+  <li>Notebook searches several candidates and errors clearly if missing</li>
+</ul>
+<p class="note reveal">Replace the placeholder before demos — sample articles are only for plumbing.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Inspect</p>
+<h2 class="reveal">What did we load?</h2>
+<div class="grid-2 reveal">
+  <div class="card"><h3>Count</h3><p>Print <code>len(pages)</code> — pages ≠ chunks yet.</p></div>
+  <div class="card"><h3>Peek</h3><p>Print <code>pages[0].page_content[:400]</code> and metadata keys.</p></div>
+</div>
+<p class="reveal note">If text looks empty, the PDF may be scanned images — OCR is out of scope; use a text PDF.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Chunking</p>
+<h2 class="reveal">Why split legal text?</h2>
+<div class="grid-2 reveal">
+  <div class="card"><h3>Context window</h3><p>You cannot paste the whole constitution every turn.</p></div>
+  <div class="card"><h3>Retrieval precision</h3><p>Smaller chunks let meaning search land on the right article.</p></div>
+</div>
+<p class="reveal note">Overlap keeps sentences that straddle boundaries from disappearing.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Splitter</p>
+<h2 class="reveal"><code>RecursiveCharacterTextSplitter</code></h2>
+<pre class="reveal">RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200,
+)</pre>
+<div class="grid-2 reveal">
+  <div class="card"><h3>1000</h3><p>Enough for an article-ish passage without flooding the prompt.</p></div>
+  <div class="card"><h3>200</h3><p>~20% overlap — homework: try 500 / 1500 and compare.</p></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Embeddings</p>
+<h2 class="reveal">Free model: MiniLM</h2>
+<ul class="compact reveal">
+  <li><code>sentence-transformers/all-MiniLM-L6-v2</code></li>
+  <li>384 dimensions · CPU-friendly in Colab</li>
+  <li>Wrapped via <code>HuggingFaceEmbeddings</code> for LangChain</li>
+</ul>
+<p class="note reveal">Same family as Week 3 — Capstone reuses muscle memory.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Vector DB</p>
+<h2 class="reveal">In-memory Qdrant</h2>
+<pre class="reveal">client = QdrantClient(":memory:")
+client.create_collection(
+    collection_name="nepal_constitution",
+    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+)</pre>
+<p class="reveal">Payloads carry <code>text</code>, <code>source</code>, <code>page</code> — no separate FAISS-style chunk store.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Upsert</p>
+<h2 class="reveal">Embed documents → points</h2>
+<div class="steps reveal">
+  <div class="step"><div><h3>Embed</h3><p><code>embeddings.embed_documents(texts)</code></p></div></div>
+  <div class="step"><div><h3>PointStruct</h3><p><code>id</code> + <code>vector</code> + <code>payload</code></p></div></div>
+  <div class="step"><div><h3>Upsert</h3><p><code>client.upsert(...)</code> then print point count</p></div></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Retrieve</p>
+<h2 class="reveal">Search by meaning</h2>
+<p class="reveal">Ask a paraphrase: <em>“Are citizens equal before the law?”</em> — not a keyword copy of the article title.</p>
+<pre class="reveal">hits = client.query_points(collection_name=..., query=qvec, limit=k).points</pre>
+<p class="note reveal">Inspect <code>score</code> + <code>page</code> before trusting the LLM.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Prompt</p>
+<h2 class="reveal">Grounded generation rules</h2>
+<ul class="compact reveal">
+  <li>Answer <strong>only</strong> from retrieved context</li>
+  <li>Cite <code>[page N]</code> when metadata has a page</li>
+  <li>If context is weak → say it is not in the constitution</li>
+</ul>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">LCEL</p>
+<h2 class="reveal">retrieve → format → prompt → llm</h2>
+<pre class="reveal">result = (docs_prompt | llm).invoke({
+    "question": question,
+    "context": format_hits(hits),
+})</pre>
+<p class="reveal note"><code>ask()</code> in the notebook wraps this and returns a string answer.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Dials</p>
+<h2 class="reveal">top-k and score threshold</h2>
+<div class="grid-2 reveal">
+  <div class="card"><h3>k</h3><p>How many chunks enter the prompt. More context ≠ always better.</p></div>
+  <div class="card"><h3>threshold</h3><p>Drop weak cosine hits. Too high → false “not found”.</p></div>
+</div>
+<p class="note reveal">Class 2 exposes both as Gradio sliders.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Safety</p>
+<h2 class="reveal">Honest misses</h2>
+<p class="reveal">Ask something off-constitution (sports, celebrity news). Expect empty retrieval or an explicit refusal — <strong>not</strong> a fluent hallucination.</p>
+<div class="card reveal" style="margin-top:22px"><h3>Teaching point</h3><p>RAG quality is retrieval + refusal policy, not just model size.</p></div>
+
+</div>
+
+</section>
+
+<section class="slide dark ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Workshop</p>
+<h2 class="reveal">Open the Class 1 notebook</h2>
+<p class="reveal" style="font-size:26px;margin:18px 0 28px;color:var(--muted)"><code>week4_constitution_rag_pipeline.ipynb</code></p>
+<p class="reveal"><a class="colab" href="https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-4/notebooks/week4_constitution_rag_pipeline.ipynb" target="_blank" rel="noopener">Open in Google Colab →</a></p>
+
+</div>
+<div class='bar'></div>
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Close</p>
+<h2 class="reveal">Checklist &amp; homework</h2>
+<ul class="compact check reveal">
+  <li>PDF loads via PyPDFLoader</li>
+  <li>Chunks in in-memory Qdrant with page metadata</li>
+  <li><code>ask()</code> cites context and refuses off-topic</li>
+</ul>
+<p class="reveal note" style="margin-top:22px"><strong>Homework:</strong> swap in the real Constitution PDF · try chunk sizes 500 vs 1500 · bring 5 on + 5 off questions to Class 2.</p>
+
+</div>
+
+</section>
+
+<section class="slide dark ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 1</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Next</p>
+<h1 class="reveal">Class 2 — Gradio UI</h1>
+<p class="reveal" style="margin-top:24px;font-size:28px;color:var(--muted);max-width:1000px">Same pipeline. Add chat, a sources panel, and live k / threshold controls.</p>
+
+</div>
+<div class='bar'></div>
+</section>
+
+</main>
+</div>
+<script>
+
+class SlidePresentation{
+  constructor(){
+    this.slides=[...document.querySelectorAll('.slide')];
+    this.current=0;
+    this.stage=document.getElementById('deckStage');
+    this.counter=document.getElementById('slideCounter');
+    this.fill=document.getElementById('progressFill');
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.setupWheel();
+    this.showSlide(0);
+  }
+  setupStageScale(){
+    const scale=()=>{
+      const f=Math.min(innerWidth/1920, innerHeight/1080);
+      const x=(innerWidth-1920*f)/2, y=(innerHeight-1080*f)/2;
+      this.stage.style.transform=`translate(${x}px,${y}px) scale(${f})`;
+    };
+    scale(); addEventListener('resize', scale);
+  }
+  setupKeyboardNav(){
+    addEventListener('keydown', e=>{
+      if(e.target && e.target.getAttribute && e.target.getAttribute('contenteditable')==='true') return;
+      if(['ArrowRight','PageDown',' ','Spacebar'].includes(e.key)){e.preventDefault();this.next();}
+      if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();this.prev();}
+      if(e.key==='Home'){e.preventDefault();this.showSlide(0);}
+      if(e.key==='End'){e.preventDefault();this.showSlide(this.slides.length-1);}
+    });
+  }
+  setupTouchNav(){
+    let x0=null;
+    this.stage.addEventListener('touchstart',e=>{x0=e.changedTouches[0].screenX;},{passive:true});
+    this.stage.addEventListener('touchend',e=>{
+      if(x0===null) return;
+      const dx=e.changedTouches[0].screenX-x0;
+      if(Math.abs(dx)>50){ if(dx<0) this.next(); else this.prev(); }
+      x0=null;
+    },{passive:true});
+  }
+  setupWheel(){
+    let cool=0;
+    addEventListener('wheel', e=>{
+      const now=Date.now(); if(now<cool) return;
+      if(Math.abs(e.deltaY)<28) return;
+      cool=now+450;
+      if(e.deltaY>0) this.next(); else this.prev();
+    },{passive:true});
+  }
+  showSlide(i){
+    this.current=Math.max(0, Math.min(i, this.slides.length-1));
+    this.slides.forEach((s,idx)=>{
+      s.classList.toggle('active', idx===this.current);
+      s.classList.toggle('visible', idx===this.current);
+    });
+    if(this.counter) this.counter.textContent=String(this.current+1).padStart(2,'0')+' / '+String(this.slides.length).padStart(2,'0');
+    if(this.fill) this.fill.style.width=((this.current+1)/this.slides.length*100)+'%';
+  }
+  next(){this.showSlide(this.current+1);}
+  prev(){this.showSlide(this.current-1);}
+}
+class InlineEditor{
+  constructor(key){this.storageKey=key;this.isActive=false;this.restore();}
+  restore(){
+    const saved=localStorage.getItem(this.storageKey); if(!saved) return;
+    try{const data=JSON.parse(saved); document.querySelectorAll('.slide').forEach((s,i)=>{if(data[i]!==undefined)s.innerHTML=data[i];});}catch(e){}
+  }
+  save(){
+    const data=[...document.querySelectorAll('.slide')].map(s=>s.innerHTML);
+    localStorage.setItem(this.storageKey, JSON.stringify(data));
+  }
+  download(){
+    const blob=new Blob([document.documentElement.outerHTML],{type:'text/html'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=location.pathname.split('/').pop()||'deck.html'; a.click();
+  }
+  toggleEditMode(){
+    this.isActive=!this.isActive;
+    document.querySelectorAll('.slide h1,.slide h2,.slide h3,.slide p,.slide li,.slide td,.slide th,.slide span').forEach(el=>{
+      el.setAttribute('contenteditable', this.isActive?'true':'false');
+    });
+    document.getElementById('editToggle').classList.toggle('active', this.isActive);
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  window.deck=new SlidePresentation();
+  const editor=new InlineEditor(document.body.dataset.editKey||'deck-edits');
+  const hotzone=document.querySelector('.edit-hotzone');
+  const editToggle=document.getElementById('editToggle');
+  let hideTimeout=null;
+  if(hotzone&&editToggle){
+    editToggle.addEventListener('click',()=>editor.toggleEditMode());
+    hotzone.addEventListener('click',()=>editor.toggleEditMode());
+    hotzone.addEventListener('mouseenter',()=>{clearTimeout(hideTimeout);editToggle.classList.add('show');});
+    hotzone.addEventListener('mouseleave',()=>{hideTimeout=setTimeout(()=>{if(!editor.isActive)editToggle.classList.remove('show');},400);});
+    editToggle.addEventListener('mouseenter',()=>clearTimeout(hideTimeout));
+    editToggle.addEventListener('mouseleave',()=>{hideTimeout=setTimeout(()=>{if(!editor.isActive)editToggle.classList.remove('show');},400);});
+  }
+  addEventListener('keydown',e=>{
+    if((e.key==='e'||e.key==='E') && !(e.target.getAttribute&&e.target.getAttribute('contenteditable')==='true')) editor.toggleEditMode();
+    if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();editor.save();editor.download();}
+  });
+});
+
+</script>
+<div class="edit-hotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)">&#9998;</button>
+</body>
+</html>

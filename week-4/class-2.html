@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class 2 — Gradio Capstone UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* === viewport-base === */
+
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--slide-bg,#fff);}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;background:var(--slide-bg,#fff);}
+.slide.active,.slide.visible{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+.deck-controls{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;}
+@media print{
+  html,body{width:1920px;height:auto;overflow:visible;background:#fff;}
+  .deck-viewport{position:static;overflow:visible;background:#fff;}
+  .deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none;}
+  .slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always;}
+  .slide:last-child{break-after:auto;page-break-after:auto;}
+  .deck-controls{display:none!important;}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important;}}
+
+/* === Constitution Archive theme === */
+
+:root{
+  --stage-bg:#14110f;
+  --slide-bg:#f3efe6;
+  --ink:#14110f;
+  --paper:#f3efe6;
+  --crimson:#9b1b2e;
+  --gold:#b8953a;
+  --dim:#6b645c;
+  --muted:#9a9186;
+  --line:#2e2924;
+  --panel:#1c1815;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Sora',sans-serif;color:var(--ink);}
+.slide.dark{--slide-bg:var(--ink);background:var(--ink);color:var(--paper);}
+.slide.paper{background:var(--paper);color:var(--ink);}
+.accent-edge{position:absolute;top:0;bottom:0;left:0;width:10px;background:linear-gradient(180deg,var(--crimson),var(--gold));z-index:45;}
+.deck-chrome-top{
+  position:absolute;top:0;left:0;right:0;height:72px;z-index:40;
+  display:flex;align-items:center;gap:14px;padding:0 64px 0 84px;
+  border-bottom:1px solid rgba(46,41,36,0.18);
+  font-size:15px;font-weight:600;letter-spacing:1px;color:var(--dim);
+  font-family:'IBM Plex Mono',monospace;
+}
+.slide.dark .deck-chrome-top{border-bottom-color:rgba(243,239,230,0.12);color:var(--muted);}
+.deck-chrome-top .sq{width:12px;height:12px;background:var(--crimson);box-shadow:0 0 10px rgba(155,27,46,0.45);}
+.deck-chrome-top a{color:var(--gold);text-decoration:none;font-weight:700;}
+.deck-chrome-top .weekmeta{margin-left:auto;text-transform:uppercase;}
+.deck-chrome-bottom{
+  position:absolute;bottom:0;left:0;right:0;height:56px;z-index:40;
+  display:flex;align-items:center;padding:0 64px 0 84px;
+  font-size:14px;color:var(--dim);font-family:'IBM Plex Mono',monospace;
+}
+.slide.dark .deck-chrome-bottom{color:var(--muted);}
+.deck-chrome-bottom .counter{font-weight:700;color:var(--ink);}
+.slide.dark .deck-chrome-bottom .counter{color:var(--paper);}
+.deck-chrome-bottom .hint{margin-left:auto;}
+.progress-track{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(46,41,36,0.15);z-index:41;}
+.slide.dark .progress-track{background:rgba(243,239,230,0.12);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--crimson),var(--gold));width:0;}
+.slide-inner{position:absolute;top:110px;left:120px;right:120px;bottom:90px;display:flex;flex-direction:column;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--crimson);margin-bottom:14px;}
+.slide.dark .eyebrow{color:var(--gold);}
+h1{font-family:'Newsreader',serif;font-weight:700;font-size:84px;letter-spacing:-1.5px;line-height:1.05;}
+h2{font-family:'Newsreader',serif;font-weight:700;font-size:54px;letter-spacing:-1px;line-height:1.1;margin-bottom:22px;}
+h3{font-family:'Newsreader',serif;font-weight:700;font-size:30px;margin-bottom:12px;}
+p,li{font-size:24px;line-height:1.45;color:var(--dim);}
+.slide.dark p,.slide.dark li{color:var(--muted);}
+strong{color:var(--ink);font-weight:700;}
+.slide.dark strong{color:var(--paper);}
+code,.mono{font-family:'IBM Plex Mono',monospace;color:var(--crimson);font-size:0.92em;}
+.slide.dark code,.slide.dark .mono{color:var(--gold);}
+.bar{height:8px;width:100%;background:linear-gradient(90deg,var(--crimson),var(--gold));position:absolute;left:0;right:0;bottom:0;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:18px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;margin-top:18px;}
+.card{background:rgba(20,17,15,0.04);border:1px solid rgba(46,41,36,0.18);padding:22px 24px;}
+.slide.dark .card{background:rgba(243,239,230,0.05);border-color:rgba(243,239,230,0.12);}
+.card h3{margin-bottom:10px;}
+.card p,.card li{font-size:20px;}
+table.dense{width:100%;border-collapse:collapse;margin-top:16px;font-size:20px;}
+table.dense th,table.dense td{border-bottom:1px solid rgba(46,41,36,0.18);padding:12px 10px;text-align:left;vertical-align:top;}
+.slide.dark table.dense th,.slide.dark table.dense td{border-bottom-color:rgba(243,239,230,0.12);}
+table.dense th{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:1px;text-transform:uppercase;color:var(--crimson);}
+.slide.dark table.dense th{color:var(--gold);}
+pre{background:#1a1613;color:#f3efe6;padding:20px 22px;font-family:'IBM Plex Mono',monospace;font-size:18px;line-height:1.45;overflow:hidden;margin-top:14px;}
+.steps{counter-reset:step;margin-top:10px;}
+.steps .step{display:grid;grid-template-columns:64px 1fr;gap:18px;padding:14px 0;border-bottom:1px solid rgba(46,41,36,0.14);}
+.steps .step:before{counter-increment:step;content:counter(step, decimal-leading-zero);font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--crimson);}
+.flow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;}
+.flow .pill{border:1px solid rgba(46,41,36,0.25);padding:12px 16px;font-size:18px;font-weight:600;background:#fff;}
+.flow .arrow{color:var(--crimson);font-size:28px;font-weight:700;}
+.slide.dark .flow .pill{background:rgba(243,239,230,0.06);border-color:rgba(243,239,230,0.18);color:var(--paper);}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .55s var(--ease), transform .55s var(--ease);}
+.slide.visible .reveal{opacity:1;transform:none;}
+.slide.visible .reveal:nth-child(1){transition-delay:.05s;}
+.slide.visible .reveal:nth-child(2){transition-delay:.12s;}
+.slide.visible .reveal:nth-child(3){transition-delay:.19s;}
+.slide.visible .reveal:nth-child(4){transition-delay:.26s;}
+.slide.visible .reveal:nth-child(5){transition-delay:.33s;}
+.note{font-size:18px;color:var(--muted);margin-top:16px;}
+a.colab{color:var(--crimson);font-weight:700;font-size:22px;}
+.slide.dark a.colab{color:var(--gold);}
+ul.compact{margin:8px 0 0 22px;}
+ul.compact li{margin-bottom:8px;}
+.check li{list-style:none;margin-left:0;padding-left:0;}
+.check li:before{content:"☐ ";color:var(--crimson);font-weight:700;}
+
+.edit-hotzone{position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;}
+.edit-toggle{position:fixed;top:12px;left:12px;z-index:10001;opacity:0;pointer-events:none;transition:opacity .3s ease;background:var(--ink);border:1px solid var(--gold);color:var(--paper);font-size:18px;padding:8px 12px;}
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+</style>
+</head>
+<body data-edit-key="deck-edits::week4-class2">
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+<section class="slide dark ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Week 04 · Capstone</p>
+<h1 class="reveal">Gradio <span style="color:var(--crimson)">Capstone</span> UI</h1>
+<p class="reveal" style="margin-top:28px;font-size:28px;max-width:1100px;color:var(--muted)">Class 2 — Wrap the Constitution RAG pipeline in a demo-ready interface with sources and controls.</p>
+
+</div>
+<div class='bar'></div>
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Recap</p>
+<h2 class="reveal">Class 1 pipeline (keep this mental model)</h2>
+<div class="flow reveal">
+  <span class="pill">PDF</span><span class="arrow">→</span>
+  <span class="pill">Chunks</span><span class="arrow">→</span>
+  <span class="pill">MiniLM</span><span class="arrow">→</span>
+  <span class="pill">Qdrant :memory:</span><span class="arrow">→</span>
+  <span class="pill">Groq</span>
+</div>
+<p class="note reveal">Class 2 rebuilds this in-notebook — Colab does not keep Class 1 RAM.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Goals</p>
+<h2 class="reveal">What you will finish today</h2>
+<ul class="compact reveal">
+  <li>Reusable <code>retrieve</code> / <code>ask</code> with tunable dials</li>
+  <li>Gradio Blocks: chat + sources + sliders</li>
+  <li>A 2–3 minute Capstone demo script</li>
+</ul>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Motivation</p>
+<h2 class="reveal">Why a UI?</h2>
+<div class="grid-3 reveal">
+  <div class="card"><h3>Demo</h3><p>Talk to the bot without scrolling cells.</p></div>
+  <div class="card"><h3>Share</h3><p>Temporary Colab public link for classmates.</p></div>
+  <div class="card"><h3>Dials</h3><p>Change k / threshold live and watch sources move.</p></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Deliverable shape</p>
+<h2 class="reveal">Chat · Sources · Controls</h2>
+<div class="grid-3 reveal">
+  <div class="card"><h3>Chat</h3><p>Grounded answers only from retrieval.</p></div>
+  <div class="card"><h3>Sources</h3><p>Snippet + page + score for each hit.</p></div>
+  <div class="card"><h3>Controls</h3><p>Sliders for top-k and score threshold.</p></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Gradio</p>
+<h2 class="reveal">Gradio in 60 seconds</h2>
+<ul class="compact reveal">
+  <li>Python library for quick ML demos</li>
+  <li><code>Blocks</code> = custom layout (what we need)</li>
+  <li><code>launch()</code> serves a local (or shared) web UI from Colab</li>
+</ul>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">API choice</p>
+<h2 class="reveal">Blocks vs ChatInterface</h2>
+<table class="dense reveal">
+  <tr><th>API</th><th>Good for</th><th>Today</th></tr>
+  <tr><td><code>ChatInterface</code></td><td>Fastest chat-only demos</td><td>Too limited for sources + sliders</td></tr>
+  <tr><td><code>Blocks</code></td><td>Custom multi-panel layouts</td><td><strong>Use this</strong></td></tr>
+</table>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Wireframe</p>
+<h2 class="reveal">Layout sketch</h2>
+<div class="grid-2 reveal">
+  <div class="card"><h3>Left (scale 3)</h3><p>Chatbot · textbox · k slider · threshold slider · clear</p></div>
+  <div class="card"><h3>Right (scale 2)</h3><p>Markdown sources panel updates every turn</p></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Rebuild</p>
+<h2 class="reveal">Self-contained RAG core</h2>
+<div class="steps reveal">
+  <div class="step"><div><h3>Load + chunk</h3><p>Same defaults: 1000 / 200</p></div></div>
+  <div class="step"><div><h3>Embed + Qdrant</h3><p>Fresh <code>:memory:</code> collection each runtime</p></div></div>
+  <div class="step"><div><h3>Prompt</h3><p>Reuse grounded constitution system rules</p></div></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">API</p>
+<h2 class="reveal"><code>retrieve(question, k, threshold)</code></h2>
+<pre class="reveal">hits = client.query_points(..., limit=k).points
+return [h for h in hits if h.score >= threshold]</pre>
+<p class="reveal note">Return dicts with <code>text</code>, <code>page</code>, <code>score</code> for the UI.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">API</p>
+<h2 class="reveal"><code>ask()</code> → answer + hits</h2>
+<ul class="compact reveal">
+  <li>If no hits → honest miss string + empty list</li>
+  <li>Else → LCEL invoke with formatted context</li>
+  <li>UI needs <strong>both</strong> answer and hits every turn</li>
+</ul>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Callback</p>
+<h2 class="reveal">Wire the chat handler</h2>
+<pre class="reveal">def respond(message, history, k, score_threshold):
+    answer, hits = ask(message, k=k, score_threshold=score_threshold)
+    history = history + [
+      {"role":"user","content":message},
+      {"role":"assistant","content":answer},
+    ]
+    return history, format_hits(hits)</pre>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Sources</p>
+<h2 class="reveal">Markdown panel with page + score</h2>
+<pre class="reveal">**[page 2 | score=0.61]**
+All citizens shall be equal before the law...</pre>
+<p class="reveal note">If empty: show a clear “no chunks above threshold” message.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Control</p>
+<h2 class="reveal">Slider: top-k (1–8)</h2>
+<div class="grid-2 reveal">
+  <div class="card"><h3>Low k</h3><p>Focused answers; may miss split articles.</p></div>
+  <div class="card"><h3>High k</h3><p>More coverage; risk of diluted / noisy context.</p></div>
+</div>
+<p class="note reveal">Default in notebook: <code>k=4</code>.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Control</p>
+<h2 class="reveal">Slider: score threshold (0.0–0.8)</h2>
+<div class="grid-2 reveal">
+  <div class="card"><h3>Too low</h3><p>Off-topic questions may still retrieve weak chunks → hallucinations.</p></div>
+  <div class="card"><h3>Too high</h3><p>Real constitution questions fail closed.</p></div>
+</div>
+<p class="note reveal">Default: <code>0.25</code> — tune on your PDF.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">UX</p>
+<h2 class="reveal">Empty retrieval</h2>
+<p class="reveal">When hits are empty, the assistant should say it could not find that in the constitution — and the sources panel should not pretend otherwise.</p>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Live tuning</p>
+<h2 class="reveal">Vignette for class</h2>
+<div class="steps reveal">
+  <div class="step"><div><h3>Ask on-topic</h3><p>Show answer + sources</p></div></div>
+  <div class="step"><div><h3>Raise threshold</h3><p>Watch sources disappear / miss trigger</p></div></div>
+  <div class="step"><div><h3>Ask off-topic</h3><p>Confirm honest refusal</p></div></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Share</p>
+<h2 class="reveal"><code>launch()</code> tips</h2>
+<ul class="compact reveal">
+  <li><code>demo.launch()</code> — local Colab proxy URL</li>
+  <li><code>share=True</code> — temporary public link (treat as demo-only)</li>
+  <li>Re-run the RAG build cell after runtime restarts</li>
+</ul>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Demo</p>
+<h2 class="reveal">2–3 minute Capstone script</h2>
+<ol class="compact reveal" style="margin-left:22px">
+  <li>On-constitution question → answer + sources</li>
+  <li>Move threshold / k → show retrieval change</li>
+  <li>Off-constitution question → honest miss</li>
+</ol>
+
+</div>
+
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Debug</p>
+<h2 class="reveal">Common bugs</h2>
+<table class="dense reveal">
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td>Generic answers</td><td>Print hits — wrong chunks?</td></tr>
+  <tr><td>Always “not found”</td><td>Threshold too high / PDF not loaded</td></tr>
+  <tr><td>Empty sources but chat answers</td><td>Callback not returning format_hits</td></tr>
+  <tr><td>Slow first query</td><td>Model download / embed warm-up</td></tr>
+</table>
+
+</div>
+
+</section>
+
+<section class="slide dark ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Workshop</p>
+<h2 class="reveal">Open the Class 2 notebook</h2>
+<p class="reveal" style="font-size:26px;margin:18px 0 28px;color:var(--muted)"><code>week4_constitution_rag_gradio.ipynb</code></p>
+<p class="reveal"><a class="colab" href="https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-4/notebooks/week4_constitution_rag_gradio.ipynb" target="_blank" rel="noopener">Open in Google Colab →</a></p>
+
+</div>
+<div class='bar'></div>
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Ship it</p>
+<h2 class="reveal">Deliverable checklist</h2>
+<ul class="compact check reveal">
+  <li>Gradio chat grounded in Qdrant hits</li>
+  <li>Sources panel shows text + page/score</li>
+  <li>k and threshold sliders work live</li>
+  <li>Demo script rehearsed</li>
+</ul>
+
+</div>
+
+</section>
+
+<section class="slide dark ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Capstone</p>
+<h1 class="reveal">You built a RAG product</h1>
+<p class="reveal" style="margin-top:24px;font-size:28px;color:var(--muted);max-width:1100px">Loaders → vectors → grounded generation → a UI others can try. That is the course arc from Week 1 chat to Week 4 Capstone.</p>
+
+</div>
+<div class='bar'></div>
+</section>
+
+<section class="slide paper ">
+
+  <div class="accent-edge"></div>
+  <div class="deck-chrome-top"><span class="sq"></span><a href="index.html">Week 4</a><span>/</span><span>Class 2</span><span class="weekmeta">Capstone</span></div>
+  <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slide-inner">
+
+<p class="eyebrow reveal">Beyond</p>
+<h2 class="reveal">What we skipped (on purpose)</h2>
+<ul class="compact reveal">
+  <li>Hybrid keyword + vector search</li>
+  <li>Re-ranking</li>
+  <li>Formal RAG evaluation metrics</li>
+</ul>
+<p class="note reveal">Great follow-ups once the Capstone demo is solid.</p>
+
+</div>
+
+</section>
+
+</main>
+</div>
+<script>
+
+class SlidePresentation{
+  constructor(){
+    this.slides=[...document.querySelectorAll('.slide')];
+    this.current=0;
+    this.stage=document.getElementById('deckStage');
+    this.counter=document.getElementById('slideCounter');
+    this.fill=document.getElementById('progressFill');
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.setupWheel();
+    this.showSlide(0);
+  }
+  setupStageScale(){
+    const scale=()=>{
+      const f=Math.min(innerWidth/1920, innerHeight/1080);
+      const x=(innerWidth-1920*f)/2, y=(innerHeight-1080*f)/2;
+      this.stage.style.transform=`translate(${x}px,${y}px) scale(${f})`;
+    };
+    scale(); addEventListener('resize', scale);
+  }
+  setupKeyboardNav(){
+    addEventListener('keydown', e=>{
+      if(e.target && e.target.getAttribute && e.target.getAttribute('contenteditable')==='true') return;
+      if(['ArrowRight','PageDown',' ','Spacebar'].includes(e.key)){e.preventDefault();this.next();}
+      if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();this.prev();}
+      if(e.key==='Home'){e.preventDefault();this.showSlide(0);}
+      if(e.key==='End'){e.preventDefault();this.showSlide(this.slides.length-1);}
+    });
+  }
+  setupTouchNav(){
+    let x0=null;
+    this.stage.addEventListener('touchstart',e=>{x0=e.changedTouches[0].screenX;},{passive:true});
+    this.stage.addEventListener('touchend',e=>{
+      if(x0===null) return;
+      const dx=e.changedTouches[0].screenX-x0;
+      if(Math.abs(dx)>50){ if(dx<0) this.next(); else this.prev(); }
+      x0=null;
+    },{passive:true});
+  }
+  setupWheel(){
+    let cool=0;
+    addEventListener('wheel', e=>{
+      const now=Date.now(); if(now<cool) return;
+      if(Math.abs(e.deltaY)<28) return;
+      cool=now+450;
+      if(e.deltaY>0) this.next(); else this.prev();
+    },{passive:true});
+  }
+  showSlide(i){
+    this.current=Math.max(0, Math.min(i, this.slides.length-1));
+    this.slides.forEach((s,idx)=>{
+      s.classList.toggle('active', idx===this.current);
+      s.classList.toggle('visible', idx===this.current);
+    });
+    if(this.counter) this.counter.textContent=String(this.current+1).padStart(2,'0')+' / '+String(this.slides.length).padStart(2,'0');
+    if(this.fill) this.fill.style.width=((this.current+1)/this.slides.length*100)+'%';
+  }
+  next(){this.showSlide(this.current+1);}
+  prev(){this.showSlide(this.current-1);}
+}
+class InlineEditor{
+  constructor(key){this.storageKey=key;this.isActive=false;this.restore();}
+  restore(){
+    const saved=localStorage.getItem(this.storageKey); if(!saved) return;
+    try{const data=JSON.parse(saved); document.querySelectorAll('.slide').forEach((s,i)=>{if(data[i]!==undefined)s.innerHTML=data[i];});}catch(e){}
+  }
+  save(){
+    const data=[...document.querySelectorAll('.slide')].map(s=>s.innerHTML);
+    localStorage.setItem(this.storageKey, JSON.stringify(data));
+  }
+  download(){
+    const blob=new Blob([document.documentElement.outerHTML],{type:'text/html'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=location.pathname.split('/').pop()||'deck.html'; a.click();
+  }
+  toggleEditMode(){
+    this.isActive=!this.isActive;
+    document.querySelectorAll('.slide h1,.slide h2,.slide h3,.slide p,.slide li,.slide td,.slide th,.slide span').forEach(el=>{
+      el.setAttribute('contenteditable', this.isActive?'true':'false');
+    });
+    document.getElementById('editToggle').classList.toggle('active', this.isActive);
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  window.deck=new SlidePresentation();
+  const editor=new InlineEditor(document.body.dataset.editKey||'deck-edits');
+  const hotzone=document.querySelector('.edit-hotzone');
+  const editToggle=document.getElementById('editToggle');
+  let hideTimeout=null;
+  if(hotzone&&editToggle){
+    editToggle.addEventListener('click',()=>editor.toggleEditMode());
+    hotzone.addEventListener('click',()=>editor.toggleEditMode());
+    hotzone.addEventListener('mouseenter',()=>{clearTimeout(hideTimeout);editToggle.classList.add('show');});
+    hotzone.addEventListener('mouseleave',()=>{hideTimeout=setTimeout(()=>{if(!editor.isActive)editToggle.classList.remove('show');},400);});
+    editToggle.addEventListener('mouseenter',()=>clearTimeout(hideTimeout));
+    editToggle.addEventListener('mouseleave',()=>{hideTimeout=setTimeout(()=>{if(!editor.isActive)editToggle.classList.remove('show');},400);});
+  }
+  addEventListener('keydown',e=>{
+    if((e.key==='e'||e.key==='E') && !(e.target.getAttribute&&e.target.getAttribute('contenteditable')==='true')) editor.toggleEditMode();
+    if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();editor.save();editor.download();}
+  });
+});
+
+</script>
+<div class="edit-hotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)">&#9998;</button>
+</body>
+</html>

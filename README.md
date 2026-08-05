@@ -1,6 +1,6 @@
 # Global Chatbot Bootcamp — Course Site
 
-Static teaching site for **Building AI Chatbots with LLMs and RAG**. Weeks 1–3 slide decks are live; Week 4 is stubbed as “Coming soon.”
+Static teaching site for **Building AI Chatbots with LLMs and RAG**. Weeks 1–4 slide decks and Capstone notebooks are live.
 
 ## Local preview
 
@@ -59,6 +59,16 @@ week-3/
     week3_embeddings_foundations.ipynb  # Class 1 — cosine, semantic search, PCA, limitations
     week3_faiss_vector_search.ipynb     # Class 2 — Flat/IVF/HNSW, recall@k benchmarks, persistence
     week3_qdrant_retrieval_agent.ipynb  # Class 3 — Qdrant, filters, retrieval-backed docs node
+week-4/
+  index.html            # Week 4 hub (Constitution Archive theme)
+  class-1.html          # RAG pipeline from scratch slides
+  class-2.html          # Gradio Capstone UI slides
+  notebooks/
+    week4_constitution_rag_pipeline.ipynb  # Class 1 — loaders, Qdrant, Groq RAG
+    week4_constitution_rag_gradio.ipynb     # Class 2 — Gradio chat + sources + controls
+  data/
+    nepal-constitution.pdf  # Placeholder — replace with the real Constitution PDF
+    README.md
 assets/
   images/               # Logos, QR codes, diagrams
 docs/
@@ -70,8 +80,9 @@ docs/
 Every page is a self-contained HTML file — no shared CSS/JS, no build step, no external slide
 framework. Each week has its own visual identity: the course home uses a warm editorial/paper
 theme, Week 1 uses a retro phosphor-green terminal theme, Week 2 uses a white/black "Electric
-Studio" split-panel theme, and Week 3 uses a dark "Latent Space" theme (violet + cyan on
-near-black). See [docs/design.md](docs/design.md) for details.
+Studio" split-panel theme, Week 3 uses a dark "Latent Space" theme (violet + cyan on
+near-black), and Week 4 uses a "Constitution Archive" theme (ink, crimson, gold). See
+[docs/design.md](docs/design.md) for details.
 
 ## Colab notebooks
 
@@ -124,6 +135,28 @@ Only Class 3 needs the Groq API key; Classes 1–2 run fully offline in Colab.
 **PDF export (Week 3):** `./scripts/export-week3-notebook-pdf.sh` (exports all three notebooks)
 
 **QR codes:** add `week3-class-1.png`, `week3-class-2.png`, `week3-class-3.png` under `assets/images/qr-codes/` — see that folder's README.
+
+## Week 4 content (Capstone)
+
+| Class | Topic | Notebook |
+|-------|--------|----------|
+| 1 | Constitution RAG pipeline — LangChain `PyPDFLoader`, chunking, MiniLM embeddings, in-memory Qdrant, grounded Groq answers | `week4_constitution_rag_pipeline.ipynb` |
+| 2 | Gradio Capstone UI — chat, retrieved sources panel, top-k + score-threshold controls | `week4_constitution_rag_gradio.ipynb` |
+
+**Week 4 lab deliverable:** Gradio Constitution RAG chatbot over the Nepal Constitution PDF, with sources shown and live `k` / threshold controls.
+
+**PDF:** place the real file at [week-4/data/nepal-constitution.pdf](week-4/data/nepal-constitution.pdf) (a placeholder ships until you replace it). See [week-4/data/README.md](week-4/data/README.md).
+
+**Open Week 4 notebooks in Colab:**
+
+```
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-4/notebooks/week4_constitution_rag_pipeline.ipynb
+https://colab.research.google.com/github/spravesh1818/lfconnect-global-college-chatbot-bootcamp/blob/main/week-4/notebooks/week4_constitution_rag_gradio.ipynb
+```
+
+**Dependencies (installed in notebooks):** `langchain-core`, `langchain-community`, `langchain-text-splitters`, `langchain-groq`, `langchain-huggingface`, `qdrant-client`, `pypdf`, `sentence-transformers`, `gradio` (Class 2)
+
+Out of scope this week: hybrid search, re-ranking, and evaluation metrics.
 
 ## Week 2 content
 
