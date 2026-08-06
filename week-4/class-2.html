@@ -572,12 +572,12 @@ All citizens shall be equal before the law...</pre>
   <div class="deck-chrome-bottom"><span class="counter" id="slideCounter">01 / 01</span><span class="hint">← → · Space · E edit</span></div>
   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
 <div class="slide-inner">
-<p class="eyebrow reveal">Work together</p>
-<h2 class="reveal">Part B — 2026 World Cup bot</h2>
-<p class="reveal">Same RAG spine. New loader: <code>WebBaseLoader</code> on the Wikipedia page for the 2026 FIFA World Cup.</p>
+<p class="eyebrow reveal">Demo 2</p>
+<h2 class="reveal">FIFA World Cup 2026 (Wikipedia)</h2>
+<p class="reveal">Work-together demo. Load the web page with LangChain <code>WebBaseLoader</code> — source: the Wikipedia article for the 2026 FIFA World Cup.</p>
 <div class="grid-2 reveal">
-  <div class="card"><h3>Specialize</h3><p>Separate Qdrant collection + a prompt that answers <strong>only</strong> about World Cup 2026.</p></div>
-  <div class="card"><h3>Prove the pattern</h3><p>PDF bot and web bot share chunk → MiniLM → Qdrant → Groq.</p></div>
+  <div class="card"><h3>Web source</h3><p><code>WebBaseLoader</code> → <code>en.wikipedia.org/wiki/2026_FIFA_World_Cup</code></p></div>
+  <div class="card"><h3>Same spine</h3><p>Chunk → MiniLM → Qdrant <code>worldcup_2026</code> → Groq → Gradio</p></div>
 </div>
 </div>
 </section>
@@ -588,12 +588,12 @@ All citizens shall be equal before the law...</pre>
   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
 <div class="slide-inner">
 <p class="eyebrow reveal">Live build</p>
-<h2 class="reveal">Classroom sequence</h2>
+<h2 class="reveal">Demo 2 classroom sequence</h2>
 <div class="steps reveal">
-  <div class="step"><div><h3>Load</h3><p><code>WebBaseLoader</code> → Wikipedia 2026 World Cup</p></div></div>
+  <div class="step"><div><h3>Load</h3><p><code>WebBaseLoader</code> → Wikipedia 2026 FIFA World Cup</p></div></div>
   <div class="step"><div><h3>Index</h3><p>Chunk + upsert into <code>worldcup_2026</code></p></div></div>
   <div class="step"><div><h3>Ask</h3><p><code>ask_worldcup()</code> — on-topic hits + off-topic refusal</p></div></div>
-  <div class="step"><div><h3>Optional UI</h3><p>Second Gradio on port 7861</p></div></div>
+  <div class="step"><div><h3>UI</h3><p>World Cup Gradio on port 7861</p></div></div>
 </div>
 </div>
 </section>
